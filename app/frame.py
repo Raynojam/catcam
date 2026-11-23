@@ -221,9 +221,12 @@ def run():
         if reason:
             log(f"frame stage: restarting ({reason})")
             continue
-        message = (err or "").strip().splitlines()[-1:] or ["ffmpeg stopped"]
-        log(f"frame stage: ffmpeg exited with {process.returncode}: {message[0]}")
-        write_status(state="error", message=message[0][:200], device=node)
+        lines = [l for l in (err or "").strip().splitlines() if "Last message repeated" not in l] or ["ffmpeg stopped"]
+        log(f"frame stage: ffmpeg exited with {process.returncode}:")
+        for line in lines[-6:]:
+            log(f"  {line}")
+        useful = next((l for l in reversed(lines) if "Nothing was written" not in l and "Conversion failed" not in l), lines[-1])
+        write_status(state="error", message=useful[:200], device=node)
         time.sleep(5 if time.time() - started > 30 else 15)
     PREVIEW.unlink(missing_ok=True)
     write_status(state="stopped")

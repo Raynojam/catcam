@@ -42,7 +42,7 @@ sudo -v
 
 say "1/5 System pieces"
 dpkg -s v4l2loopback-dkms >/dev/null 2>&1 || sudo apt-get install -y v4l2loopback-dkms v4l2loopback-utils
-echo 'options v4l2loopback video_nr=10 card_label=CatCamFrame exclusive_caps=1' | sudo tee /etc/modprobe.d/catcam-v4l2loopback.conf >/dev/null
+echo 'options v4l2loopback video_nr=10 card_label=CatCamFrame exclusive_caps=0' | sudo tee /etc/modprobe.d/catcam-v4l2loopback.conf >/dev/null
 echo 'v4l2loopback' | sudo tee /etc/modules-load.d/catcam.conf >/dev/null
 if [ ! -e "${CATCAM_LOOPBACK_DEV:-/dev/video10}" ]; then sudo modprobe v4l2loopback; sleep 1; fi
 grep -q '^CatCam' "${CATCAM_LOOPBACK_NAME:-/sys/class/video4linux/video10/name}" 2>/dev/null || die "/dev/video10 is not the Cat Cam virtual camera; check: cat /sys/class/video4linux/video10/name"
@@ -105,10 +105,21 @@ sudo install -m 0755 "$REPO/guard/catcam_guard.py" /usr/local/bin/catcam-guard
 "$VENV_PY" -c "import ast,sys;[ast.parse(open(f).read()) for f in sys.argv[1:]]" "$APP" "${HELPERS[@]/#/$SHARE/}"
 
 say "4/5 Restarting Cat Cam"
+# Stop everything that uses the virtual camera, then reload it with Cat Cam's settings so no
+# format or mode left over from earlier experiments can block the frame stage.
+sudo systemctl stop catcam-camera.service catcam-frame.service 2>/dev/null || true
+if [ -z "${CATCAM_LOOPBACK_DEV:-}" ] && ! sudo fuser -s /dev/video10 2>/dev/null; then
+  sudo modprobe -r v4l2loopback 2>/dev/null && sudo modprobe v4l2loopback && sleep 1 || true
+fi
 sudo systemctl enable catcam-frame.service >/dev/null 2>&1
-sudo systemctl restart catcam-frame.service
-sleep 3
-sudo systemctl restart catcam-camera.service catcam-recorder.service
+sudo systemctl start catcam-frame.service
+for _ in $(seq 1 20); do   # wait until the frame stage is writing pictures before the stream opens them
+  python3 -c "import json,sys,time;s=json.load(open(sys.argv[1]));sys.exit(0 if s.get('state')=='running' and time.time()-s.get('started',0)>3 else 1)" \
+    "$SHARE/frame/status.json" 2>/dev/null && systemctl is-active --quiet catcam-frame.service && break
+  sleep 1
+done
+sudo systemctl start catcam-camera.service
+sudo systemctl restart catcam-recorder.service
 sudo systemctl enable catcam-insights.service >/dev/null 2>&1
 sudo systemctl restart catcam-insights.service
 sudo systemctl restart catcam-guard.service 2>/dev/null || true
@@ -145,7 +156,8 @@ if [ "$SITE" = 1 ] && [ "$STREAM" = 0 ] && ! v4l2-ctl --list-devices 2>/dev/null
 fi
 if [ "$SITE" != 1 ] || [ "$STREAM" != 1 ]; then
   [ "$SITE" = 1 ] || warn "The site did not come up with version $VERSION."
-  [ "$STREAM" = 1 ] || { warn "The camera stream did not come back."; journalctl -u catcam-frame -n 8 --no-pager -o cat 2>/dev/null | sed 's/^/    /' || true; }
+  [ "$STREAM" = 1 ] || { warn "The camera stream did not come back."; journalctl -u catcam-frame -n 14 --no-pager -o cat 2>/dev/null | sed 's/^/    /' || true;
+                          journalctl -u catcam-camera -n 4 --no-pager -o cat 2>/dev/null | sed 's/^/    /' || true; }
   restore
   die "Cat Cam $VERSION failed its checks and the previous version is back. Send Claude the lines above."
 fi
