@@ -11,4 +11,4 @@ jobs:
       - run: sudo apt-get install -y ffmpeg
       - run: pip install pytest shellcheck-py
       - run: python -m pytest -q tests
-      - run: shellcheck -S warning deploy/install.sh deploy/catcam-update deploy/catcam-insights
+      - run: shellcheck -S warning deploy/install.sh deploy/catcam-update deploy/catcam-insights lounge/apply.sh
