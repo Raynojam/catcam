@@ -150,8 +150,8 @@ for _ in $(seq 1 60); do
   [ "$SITE" = 1 ] && [ "$STREAM" = 1 ] && break
   sleep 2
 done
-if [ "$SITE" = 1 ] && [ "$STREAM" = 0 ] && ! v4l2-ctl --list-devices 2>/dev/null | grep -qi "brave 7 le"; then
-  warn "The site is fine but the camera isn't connected (or isn't in PCCAM mode), so the picture couldn't be checked."
+if [ "$SITE" = 1 ] && [ "$STREAM" = 0 ] && ! v4l2-ctl --list-devices 2>/dev/null | grep -qiE "zv-1f|brave 7 le"; then
+  warn "The site is fine but the camera isn't connected (Sony: USB Streaming mode; AKASO: PCCAM mode), so the picture couldn't be checked."
   STREAM=1
 fi
 if [ "$SITE" != 1 ] || [ "$STREAM" != 1 ]; then

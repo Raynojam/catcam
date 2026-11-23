@@ -24,7 +24,7 @@ UNITS = Path("/etc/systemd/system")
 def camera_node(listing):
     for group in re.split(r"\n\s*\n", listing.strip()):
         lines = group.splitlines()
-        if lines and "brave 7 le" in lines[0].lower():
+        if lines and any(name in lines[0].lower() for name in ("zv-1f", "brave 7 le")):
             for line in lines[1:]:
                 if re.fullmatch(r"/dev/video\d+", line.strip()):
                     return line.strip()
@@ -55,7 +55,7 @@ def stream():
                                 "--device-timeout=5", "--host=127.0.0.1", "--port=8085"])
     node = find_camera()
     if not node:
-        raise SystemExit("Waiting for Brave 7 LE in PCCAM mode. Retrying in five seconds.")
+        raise SystemExit("Waiting for the camera (Sony in USB Streaming mode, or AKASO in PCCAM mode). Retrying in five seconds.")
     # A persistent link survives changes to the kernel's video device numbering.
     for link in sorted(Path("/dev/v4l/by-id").glob("*-video-index0")):
         if link.resolve() == Path(node):

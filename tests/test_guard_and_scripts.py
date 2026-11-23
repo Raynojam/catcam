@@ -36,3 +36,14 @@ def test_reset_button_request_is_taken_once(tmp_path, monkeypatch):
     flag.write_text("x")
     assert catcam_guard.reset_requested() and not flag.exists()
     assert not catcam_guard.reset_requested()
+
+
+def test_guard_resets_the_camera_in_use(tmp_path, monkeypatch):
+    import catcam_guard as guard
+    for name, product in (("1-3", "ZV-1F"), ("1-4", "Brave 7 LE"), ("1-13", "HD Webcam")):
+        (tmp_path / name).mkdir()
+        (tmp_path / name / "product").write_text(product + "\n")
+    monkeypatch.setattr(guard.glob, "glob", lambda pattern: [str(p) for p in tmp_path.iterdir()])
+    assert guard.find_camera() == str(tmp_path / "1-3") and not guard.camera_is_akaso()
+    (tmp_path / "1-3" / "product").unlink()
+    assert guard.find_camera() == str(tmp_path / "1-4") and guard.camera_is_akaso()

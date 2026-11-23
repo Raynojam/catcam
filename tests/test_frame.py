@@ -36,3 +36,53 @@ def test_camera_node_matches_the_akaso():
     listing = "HD Webcam: HD Webcam (usb-0000:00:14.0-13):\n\t/dev/video0\n\nBrave 7 LE (usb-0000:00:14.0-4):\n\t/dev/video2\n\t/dev/video3\n"
     assert frame.camera_node(listing, "brave 7 le") == "/dev/video2"
     assert frame.camera_node(listing, "sony") is None
+
+
+LISTING = ("HD Webcam: HD Webcam (usb-0000:00:14.0-13):\n\t/dev/video0\n\t/dev/video1\n\t/dev/media0\n\n"
+           "ZV-1F (usb-0000:00:14.0-3):\n\t/dev/video2\n\t/dev/video3\n\t/dev/media1\n\n"
+           "Brave 7 LE (usb-0000:00:14.0-4):\n\t/dev/video4\n\t/dev/video5\n")
+
+SONY_FORMATS = """ioctl: VIDIOC_ENUM_FMT
+\tType: Video Capture
+
+\t[0]: 'MJPG' (Motion-JPEG, compressed)
+\t\tSize: Discrete 1280x720
+\t\t\tInterval: Discrete 0.033s (30.000 fps)
+\t[1]: 'YUYV' (YUYV 4:2:2)
+\t\tSize: Discrete 1280x720
+\t\t\tInterval: Discrete 0.033s (30.000 fps)
+"""
+
+
+def test_the_sony_wins_over_the_akaso_and_the_laptop_webcam_is_never_used():
+    assert frame.pick_camera(LISTING, "auto") == ("/dev/video2", "zv-1f")
+    assert frame.pick_camera(LISTING, "brave 7 le") == ("/dev/video2", "zv-1f")  # old default means auto
+    without_sony = LISTING.replace("ZV-1F (usb-0000:00:14.0-3):\n\t/dev/video2\n\t/dev/video3\n\t/dev/media1\n\n", "")
+    assert frame.pick_camera(without_sony, "auto") == ("/dev/video4", "brave 7 le")
+    only_webcam = LISTING.split("\n\n")[0]
+    assert frame.pick_camera(only_webcam, "auto") == (None, None)
+
+
+def test_the_sony_runs_at_its_own_720p30_and_is_slowed_to_the_stream_rate():
+    config = frame.validate(dict(frame.DEFAULTS))
+    assert frame.choose_mode(frame.parse_modes(SONY_FORMATS), config) == ("mjpeg", "1280x720", 30.0)
+    yuyv_only = SONY_FORMATS.split("\t[0]")[0] + "\t[0]" + SONY_FORMATS.split("\t[1]")[1]
+    assert frame.choose_mode(frame.parse_modes(yuyv_only), config) == ("yuyv422", "1280x720", 30.0)
+    sony = {**config, "input_format": "mjpeg", "capture": "1280x720", "capture_fps": 30.0}
+    cmd = frame.command("/dev/video2", sony, False)
+    assert cmd[cmd.index("-video_size") + 1] == "1280x720" and cmd[cmd.index("-framerate") + 1] == "30"
+    graph, _ = frame.filter_graph(sony, False)
+    assert graph.startswith("[0:v]fps=15,scale=1280:720")
+
+
+def test_the_akaso_keeps_1080p_mjpeg_at_15():
+    akaso = """\t[0]: 'MJPG' (Motion-JPEG, compressed)
+\t\tSize: Discrete 3840x2160
+\t\t\tInterval: Discrete 0.033s (30.000 fps)
+\t\tSize: Discrete 1920x1080
+\t\t\tInterval: Discrete 0.033s (30.000 fps)
+\t\t\tInterval: Discrete 0.067s (15.000 fps)
+"""
+    config = frame.validate(dict(frame.DEFAULTS))
+    assert frame.choose_mode(frame.parse_modes(akaso), config) == ("mjpeg", "1920x1080", 15.0)
+    assert frame.choose_mode({}, config) is None

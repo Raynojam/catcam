@@ -29,7 +29,7 @@ def env(name, default, cast=str):
     return cast(v) if v not in (None, "") else default
 
 STREAM_URL      = env("CATCAM_STREAM_URL", "http://127.0.0.1:8085")
-CAMERA_PRODUCT  = env("CATCAM_USB_PRODUCT", "Brave 7 LE")
+CAMERA_PRODUCT  = env("CATCAM_USB_PRODUCT", "ZV-1F,Brave 7 LE")  # USB product names, best first
 CAMERA_SERVICE  = env("CATCAM_SERVICE", "catcam-camera.service")
 CHECK_SECONDS   = env("CATCAM_CHECK_SECONDS", 30, int)
 BAD_CHECKS      = env("CATCAM_BAD_CHECKS", 4, int)          # 4 x 30s = 2 minutes
@@ -129,14 +129,27 @@ def reset_requested():
 
 # ---------- recovering ----------
 def find_camera():
+    """The USB device of the camera in use: the first product in CAMERA_PRODUCT that is plugged in."""
+    present = {}
     for d in glob.glob("/sys/bus/usb/devices/*"):
         try:
             with open(os.path.join(d, "product")) as f:
-                if f.read().strip() == CAMERA_PRODUCT:
-                    return d
+                present.setdefault(f.read().strip().lower(), d)
         except OSError:
             continue
+    for wanted in (p.strip().lower() for p in CAMERA_PRODUCT.split(",") if p.strip()):
+        if wanted in present:
+            return present[wanted]
     return None
+
+
+def camera_is_akaso():
+    sysdir = find_camera()
+    try:
+        with open(os.path.join(sysdir, "product")) as f:
+            return "brave" in f.read().lower()
+    except (OSError, TypeError):
+        return False
 
 def usb_reset(sysdir):
     with open(os.path.join(sysdir, "busnum")) as f:
@@ -188,7 +201,7 @@ def recover(state, reason, dry_run=False, step=None):
             return recover(state, reason, dry_run, step=2)
         record(state, "reset-failed", f"{reason}; {action}: {e}")
         return False
-    time.sleep(8)  # let the AKASO re-enumerate
+    time.sleep(8)  # let the camera re-enumerate
     restart_service()
     state["resets"] = recent + [now]
     record(state, "reset", f"{reason}; {action}")
@@ -222,7 +235,7 @@ def watch(dry_run=False):
             bad += 1; why = "camera offline"
         elif is_washed_out(m):
             bad += 1; why = f"picture washed out (mean {m['mean']}, {m['clipped']:.0%} white)"
-        elif is_blue(m):
+        elif is_blue(m) and camera_is_akaso():  # only the AKASO sticks blue; the Sony's colour is real
             blue += 1
             why = f"picture stuck blue (cast {m['cast']})"
             bad = BAD_CHECKS if blue >= CAST_CHECKS else 0

@@ -32,7 +32,11 @@ LOOPBACK = Path("/dev/video10")
 LOOPBACK_LABEL = "CatCamFrame"
 PREVIEW_SECONDS = 120
 DEFAULTS = {"enabled": True, "zone": None, "low_light": True, "strength": 0.5, "output": "1280x720",
-            "capture": "1920x1080", "fps": 15, "camera": "brave 7 le"}
+            "capture": "1920x1080", "fps": 15, "camera": "auto"}
+# Cameras the frame stage will use, best first. Never the laptop's own webcam: it films the room.
+KNOWN_CAMERAS = ("zv-1f", "brave 7 le")
+# v4l2 pixel formats ffmpeg can read, best first (MJPEG keeps USB bandwidth low).
+INPUT_FORMATS = (("MJPG", "mjpeg"), ("YUYV", "yuyv422"), ("NV12", "nv12"))
 OUTPUTS = {"1280x720", "1920x1080"}
 
 
@@ -94,9 +98,67 @@ def camera_node(listing, match):
     return None
 
 
-def find_camera(match):
+def camera_order(setting):
+    """The configured camera first, then the known ones. "auto" (and the old AKASO default) = known order."""
+    setting = str(setting or "auto").strip().lower()
+    if setting in ("auto", "brave 7 le"):
+        return KNOWN_CAMERAS
+    return (setting,) + tuple(c for c in KNOWN_CAMERAS if c != setting)
+
+
+def pick_camera(listing, setting):
+    for name in camera_order(setting):
+        node = camera_node(listing, name)
+        if node:
+            return node, name
+    return None, None
+
+
+def find_camera(setting):
     result = subprocess.run(["v4l2-ctl", "--list-devices"], capture_output=True, text=True)
-    return camera_node(result.stdout, match)
+    return pick_camera(result.stdout, setting)
+
+
+def parse_modes(listing):
+    """v4l2-ctl --list-formats-ext -> {fourcc: {"WxH": [fps, ...]}}."""
+    modes, fourcc, size = {}, None, None
+    for line in listing.splitlines():
+        if m := re.search(r"\[\d+\]: '(\w{4})'", line):
+            fourcc, size = m.group(1), None
+            modes.setdefault(fourcc, {})
+        elif fourcc and (m := re.search(r"Size: Discrete (\d+x\d+)", line)):
+            size = m.group(1)
+            modes[fourcc].setdefault(size, [])
+        elif fourcc and size and (m := re.search(r"\(([\d.]+) fps\)", line)):
+            modes[fourcc][size].append(float(m.group(1)))
+    return modes
+
+
+def choose_mode(modes, config):
+    """Best (input format, size, rate) the camera offers for this config, or None to use the config as is."""
+    for fourcc, ffmpeg_format in INPUT_FORMATS:
+        sizes = modes.get(fourcc)
+        if not sizes:
+            continue
+        def area(size):
+            w, h = (int(v) for v in size.split("x"))
+            return w * h
+        fits = [s for s in sizes if area(s) <= 1920 * 1080] or list(sizes)
+        size = config["capture"] if config["capture"] in fits else max(fits, key=area)
+        rates = sorted(sizes[size])
+        rate = next((r for r in rates if r >= config["fps"] - 0.01), rates[-1] if rates else config["fps"])
+        return ffmpeg_format, size, rate
+    return None
+
+
+def probe(node, config):
+    """Fill in what this camera actually delivers: input format, capture size and capture rate."""
+    result = subprocess.run(["v4l2-ctl", "-d", node, "--list-formats-ext"], capture_output=True, text=True)
+    mode = choose_mode(parse_modes(result.stdout), config)
+    if not mode:
+        return {**config, "input_format": "mjpeg", "capture_fps": config["fps"]}
+    ffmpeg_format, size, rate = mode
+    return {**config, "input_format": ffmpeg_format, "capture": size, "capture_fps": rate}
 
 
 def loopback_ready():
@@ -122,6 +184,8 @@ def crop_filter(zone, capture):
 def filter_graph(config, preview):
     out_w, out_h = output_size(config)
     steps = [f"scale={config['capture'].replace('x', ':')}"]
+    if config.get("capture_fps", config["fps"]) > config["fps"] + 0.5:
+        steps.insert(0, f"fps={config['fps']}")  # e.g. the Sony only offers 30; the stream wants 15
     crop = crop_filter(config["zone"], config["capture"])
     if crop:
         steps.append(crop)
@@ -143,8 +207,8 @@ def filter_graph(config, preview):
 def command(node, config, preview):
     graph, has_snap = filter_graph(config, preview)
     args = ["ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error",
-            "-f", "v4l2", "-input_format", "mjpeg", "-video_size", config["capture"],
-            "-framerate", str(config["fps"]), "-i", node, "-filter_complex", graph,
+            "-f", "v4l2", "-input_format", config.get("input_format", "mjpeg"), "-video_size", config["capture"],
+            "-framerate", f"{config.get('capture_fps', config['fps']):g}", "-i", node, "-filter_complex", graph,
             "-map", "[out]", "-f", "v4l2", str(LOOPBACK)]
     if has_snap:
         args += ["-map", "[snap]", "-f", "image2", "-update", "1", "-q:v", "5", str(PREVIEW)]
@@ -184,20 +248,22 @@ def run():
             write_status(state="error", message="The virtual camera (/dev/video10) is missing. Run catcam-update.")
             time.sleep(10)
             continue
-        node = find_camera(config["camera"])
+        node, camera = find_camera(config["camera"])
         if not node:
-            write_status(state="waiting", message="Camera not found. Is it on and in webcam (PCCAM) mode?")
+            write_status(state="waiting", message="Camera not found. Is the Sony on in USB Streaming mode "
+                                                  "(or the AKASO in PCCAM mode)?")
             time.sleep(5)
             continue
+        config = probe(node, config)
         preview = preview_wanted()
         stamp = config_stamp()
-        log(f"frame stage: {node} {config['capture']} -> zone {config['zone'] or 'whole frame'} -> "
+        log(f"frame stage: {camera} {node} {config['input_format']} {config['capture']}@{config['capture_fps']:g} -> zone {config['zone'] or 'whole frame'} -> "
             f"{config['output']}, low light {'on' if config['low_light'] else 'off'}"
             + (", preview on" if preview else ""))
         process = subprocess.Popen(command(node, config, preview), stdin=subprocess.DEVNULL,
                                    stderr=subprocess.PIPE, text=True)
         started = time.time()
-        write_status(state="running", device=node, zone=config["zone"], output=config["output"],
+        write_status(state="running", device=node, camera=camera, capture=config["capture"], zone=config["zone"], output=config["output"],
                      low_light=config["low_light"], preview=preview, started=started)
         reason = ""
         while process.poll() is None and not stop["now"]:
@@ -235,6 +301,7 @@ def run():
 if __name__ == "__main__":
     if sys.argv[1:] == ["--print-command"]:
         config = load_config()
-        print(" ".join(command(find_camera(config["camera"]) or "/dev/videoN", config, preview_wanted())))
+        node, _ = find_camera(config["camera"])
+        print(" ".join(command(node or "/dev/videoN", probe(node, config) if node else config, preview_wanted())))
     else:
         run()
