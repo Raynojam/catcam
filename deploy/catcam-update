@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Update Cat Cam on mina from the GitHub repo.
+#   catcam-update             install the newest release, if it is newer
+#   catcam-update --list      show releases and what is installed
+#   catcam-update --previous  go back to the version that was installed before
+#   catcam-update vX.Y.Z      install a specific release
+set -euo pipefail
+REPO="$HOME/catcam-repo"
+RELEASE="$HOME/.local/share/catcam/release"
+[ "$(id -un)" = faure ] || { echo "Run as faure: catcam-update"; exit 1; }
+[ -d "$REPO/.git" ] || { echo "The repo isn't cloned at $REPO yet. See the setup steps from Claude."; exit 1; }
+cd "$REPO"
+git fetch --quiet --tags --force --prune origin
+INSTALLED="$(cat "$RELEASE/version" 2>/dev/null || echo none)"
+releases() { git tag -l 'v*' --sort=-v:refname; }
+case "${1:-}" in
+  --list)
+    echo "Installed: $INSTALLED"
+    releases | head -n 10 | while read -r t; do printf '  %s  %s\n' "$t" "$(git tag -l --format='%(contents:subject)' "$t")"; done
+    exit 0 ;;
+  --previous)
+    PREV="$(cat "$HOME/.local/share/catcam/rollback/version" 2>/dev/null || true)"
+    [ -n "$PREV" ] || { echo "No earlier repo release is recorded to go back to."; exit 1; }
+    TARGET="v$PREV" ;;
+  v*) TARGET="$1" ;;
+  "") TARGET="$(releases | head -n1)" ;;
+  *) sed -n '2,7p' "$0"; exit 1 ;;
+esac
+[ -n "$TARGET" ] || { echo "No releases yet."; exit 1; }
+git rev-parse -q --verify "refs/tags/$TARGET" >/dev/null || { echo "Unknown release: $TARGET"; exit 1; }
+if [ "$TARGET" = "v$INSTALLED" ] && [ -z "${1:-}" ]; then echo "Cat Cam $INSTALLED is up to date."; exit 0; fi
+echo "Installing $TARGET (installed: $INSTALLED)"
+git tag -l --format='%(contents)' "$TARGET" | sed 's/^/  /'
+git -c advice.detachedHead=false checkout --quiet "$TARGET"
+exec bash deploy/install.sh

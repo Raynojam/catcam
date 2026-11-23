@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#17251e"><meta name="color-scheme" content="dark">
+<title>Cat Cam · Studio</title>
+<style>
+:root{--bg:#101c16;--panel:#1b2b21;--line:#374a3c;--ink:#f0f0df;--muted:#b1bfae;--lime:#d4ec9a;--sand:#e6dfc7;--dark:#233527;font:15px/1.5 system-ui,sans-serif;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink)}[hidden]{display:none!important}a{color:inherit;text-underline-offset:4px}button,select,input{font:inherit}:focus-visible{outline:2px solid var(--lime);outline-offset:3px}button{cursor:pointer}
+.wrap{width:min(1460px,100%);padding-inline:clamp(18px,4.3vw,66px);margin:auto}
+.top{min-height:77px;display:flex;justify-content:space-between;align-items:center;gap:24px;border-bottom:1px solid var(--line)}.brand{display:flex;align-items:center;gap:10px;font-weight:750;font-size:1.15rem;text-decoration:none;letter-spacing:-.035em}.catmark{color:var(--lime);width:26px;height:26px}.nav{display:flex;gap:24px;align-items:center;flex-wrap:wrap}.nav a{color:var(--muted);font-size:.85rem;text-decoration:none}.nav a:hover,.nav a[aria-current]{color:var(--ink)}.nav a[aria-current]{border-bottom:2px solid var(--lime);padding-block:26px}
+.heading{display:flex;align-items:end;justify-content:space-between;gap:22px;padding:36px 0 24px;flex-wrap:wrap}.eyebrow{font:600 .68rem/1.5 ui-monospace,monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--lime)}h1{font:400 clamp(2.6rem,5vw,4.8rem)/1.03 Georgia,serif;letter-spacing:-.045em;margin:9px 0 12px}h1 em{color:var(--lime)}h2{font:400 1.6rem Georgia,serif;letter-spacing:-.02em;margin:0}p{margin:0}.sub{color:var(--muted);font-size:.9rem}
+.btn{border:1px solid #5a705b;border-radius:8px;background:var(--panel);color:var(--ink);padding:8px 12px;font-size:.8rem;text-decoration:none;display:inline-block}.btn:hover{border-color:var(--lime)}.btn.primary{background:var(--lime);color:#17251e;border-color:var(--lime);font-weight:600}.btn:disabled{opacity:.5;cursor:default}
+.panel{border:1px solid var(--line);background:var(--panel);border-radius:15px;padding:20px;min-width:0}.section{margin-top:24px}.section-top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:14px;flex-wrap:wrap}.section-top .sub{font-size:.78rem}
+.drafts{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px}.draft{border:1px solid var(--line);border-radius:14px;background:#16241b;overflow:hidden;display:flex;flex-direction:column}.draft video,.draft .placeholder{width:100%;aspect-ratio:9/16;background:#0a120d;display:block;object-fit:cover}.placeholder{display:grid!important;place-content:center;text-align:center;color:var(--muted);font-size:.85rem;padding:20px}.draft .body{padding:13px;display:grid;gap:8px}.badges{display:flex;gap:6px;flex-wrap:wrap}.badge{font:600 .6rem ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;border:1px solid #5d7458;border-radius:5px;padding:2px 6px;color:var(--muted)}.badge.kind{border-color:var(--lime);color:var(--lime)}.hook{font:400 1.15rem/1.25 Georgia,serif}.who{font-size:.74rem;color:var(--muted)}.copytext{font-size:.78rem;color:#d9dfcb;background:#0f1a13;border-radius:8px;padding:8px 10px;white-space:pre-wrap;max-height:7.5em;overflow:auto}.actions{display:flex;gap:6px;flex-wrap:wrap}.star[aria-pressed=true]{border-color:var(--lime);color:var(--lime)}.danger{color:#f0b496}.err{font-size:.74rem;color:#f2c1a4}
+.picker{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}.pickcard{border:1px solid var(--line);border-radius:11px;overflow:hidden;background:#16241b;display:flex;flex-direction:column}.pickcard img{width:100%;aspect-ratio:16/9;object-fit:cover;background:#223529}.pickcard div{padding:9px 10px;display:grid;gap:6px}.pickcard strong{font-size:.8rem}.pickcard small{color:var(--muted);font-size:.72rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.settings{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) auto;gap:14px;align-items:end}.settings label{display:grid;gap:5px;font-size:.74rem;color:var(--muted)}.settings input[type=text],.settings input[type=time]{background:#0f1a13;border:1px solid #50634e;border-radius:7px;color:var(--ink);padding:8px 10px}.check{display:flex!important;align-items:center;gap:8px;color:var(--ink)!important;font-size:.82rem!important}
+.tips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;font-size:.82rem;color:var(--muted)}.tips strong{display:block;color:var(--ink);font-weight:600;margin-bottom:3px}
+.empty{border:1px dashed var(--line);border-radius:10px;padding:22px;color:var(--muted);font-size:.87rem;grid-column:1/-1}#notice{color:var(--lime);font-size:.82rem;min-height:1.3em;margin-top:10px}#notice.bad{color:#f2c1a4}.footnote{padding:17px 0 30px;font-size:.68rem;color:var(--muted)}
+@media(max-width:900px){.settings{grid-template-columns:1fr 1fr}.tips{grid-template-columns:1fr}}
+@media(max-width:640px){.top{align-items:start;flex-direction:column;gap:10px;padding:18px 0 12px;min-height:0}.nav{gap:16px}.nav a[aria-current]{padding-block:0 6px}.drafts{grid-template-columns:1fr 1fr}}
+</style></head><body>
+<div class="wrap"><header class="top"><a class="brand" href="/" aria-label="Cat Cam home"><svg class="catmark" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M6 16 5 5l9 6h4l9-6-1 11c4 15-24 15-20 0Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M11 19h1m8 0h1m-7 4 2 2 2-2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Cat Cam</a>
+<nav class="nav" aria-label="Cat camera"><a href="/">The window</a><a href="/insights/">Diary</a><a href="/studio/" aria-current="page">Studio</a><a href="/sightings/">Sightings</a><a href="/camera/">Camera</a><a href="/storage/">Storage</a></nav></header>
+<main>
+<div class="heading"><div><div class="eyebrow">Mina · The studio</div><h1>Ready <em>to post.</em></h1><p class="sub">Vertical videos for Reels, TikTok and YouTube Shorts, cut from the best moments, with the post text written.</p></div>
+<button class="btn" id="refresh" type="button">Refresh</button></div>
+
+<section aria-labelledby="draftsTitle"><div class="section-top"><h2 id="draftsTitle">Drafts</h2><span class="sub" id="draftsSub"></span></div><div class="drafts" id="drafts"><p class="empty">Loading…</p></div><p id="notice" role="status"></p></section>
+
+<section class="panel section" aria-labelledby="pickTitle"><div class="section-top"><h2 id="pickTitle">Make one from a moment</h2><span class="sub">Recent cat moments from the last three days. Rendering takes about a minute.</span></div><div class="picker" id="picker"></div></section>
+
+<section class="panel section" aria-labelledby="setTitle"><div class="section-top"><h2 id="setTitle">Settings</h2><span class="sub">Automatic drafts are made each evening and on Sunday for the week.</span></div>
+<div class="settings"><label>Watermark (your handle)<input type="text" id="handle" maxlength="30" placeholder="@minaswindow"></label><label class="check"><input type="checkbox" id="autoDaily"> Moment of the day + daily recap</label><label class="check"><input type="checkbox" id="autoWeekly"> Weekly “week at the window”</label><label>Make them at<input type="time" id="dailyTime"></label><button class="btn primary" id="saveSettings" type="button">Save</button></div></section>
+
+<section class="section" aria-labelledby="tipsTitle"><div class="section-top"><h2 id="tipsTitle">Posting tips</h2></div><div class="tips">
+<div><strong>Add sound in the app</strong>Drafts have a silent track. Pick trending audio inside Instagram, TikTok or YouTube when you post; it is licensed there and helps reach.</div>
+<div><strong>Same cast, same time</strong>Accounts grow on recurring characters. Post at a regular time and let your cats become a series people follow.</div>
+<div><strong>Hook in the first second</strong>The top line is the hook. Edit it in the post text if you can do better; the video keeps the burned-in one.</div></div></section>
+<footer class="footnote">Drafts are kept 30 days unless starred. Text is written by a local AI model; check it before posting.</footer>
+</main></div>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+let state=null,request=0,poll=0;
+const el=(tag,props={},...kids)=>{const e=document.createElement(tag);Object.assign(e,props);e.append(...kids);return e};
+const when=t=>new Date(t*1000).toLocaleString([],{weekday:'short',hour:'numeric',minute:'2-digit'});
+const clock=s=>new Date(s).toLocaleString([],{weekday:'short',hour:'numeric',minute:'2-digit'});
+const kinds={moment:'Moment',recap:'Daily recap',week:'Week'};
+function note(text,bad=false){$('notice').textContent=text;$('notice').className=bad?'bad':''}
+async function send(body,okText){try{const r=await fetch('/api/studio',{method:'POST',headers:{'Content-Type':'application/json','X-Catcam-Action':'studio'},body:JSON.stringify(body)});if(!r.ok)throw Error();note(okText);setTimeout(()=>load(true),1500)}catch(_){note('That did not go through. Try again.',true)}}
+async function copy(text,what){try{await navigator.clipboard.writeText(text);note(what+' copied.')}catch(_){note('Copy failed. Select the text and copy it.',true)}}
+function draftCard(d){
+  const media=d.status==='ready'?el('video',{src:'/studio/media/'+d.id+'.mp4',poster:'/studio/media/'+d.id+'.jpg',controls:true,preload:'none',playsInline:true}):el('div',{className:'placeholder',textContent:d.status==='failed'?'This one did not render.':'Rendering… usually about a minute.'});
+  const insta=[d.caption,d.hashtags.join(' ')].filter(Boolean).join('\n\n');
+  const card=el('article',{className:'draft'},media);
+  const body=el('div',{className:'body'},el('div',{className:'badges'},el('span',{className:'badge kind',textContent:kinds[d.kind]||d.kind}),el('span',{className:'badge',textContent:d.origin}),d.duration?el('span',{className:'badge',textContent:Math.round(d.duration)+' s'}):''),
+    el('div',{className:'hook',textContent:d.hook}),el('div',{className:'who',textContent:d.who.join(', ')+' · made '+when(d.created)}),el('div',{className:'copytext',textContent:insta}));
+  if(d.error)body.append(el('div',{className:'err',textContent:d.error.slice(0,160)}));
+  const acts=el('div',{className:'actions'});
+  if(d.status==='ready'){acts.append(el('a',{className:'btn primary',href:'/studio/media/'+d.id+'.mp4',download:'catcam-'+d.id+'.mp4',textContent:'Download'}));
+    const b1=el('button',{className:'btn',type:'button',textContent:'Copy caption'});b1.onclick=()=>copy(insta,'Caption and hashtags');
+    const b2=el('button',{className:'btn',type:'button',textContent:'Copy YouTube title'});b2.onclick=()=>copy(d.youtube_title,'YouTube title');acts.append(b1,b2)}
+  const star=el('button',{className:'btn star',type:'button',textContent:d.keep?'★ Kept':'☆ Keep'});star.setAttribute('aria-pressed',String(!!d.keep));star.onclick=()=>send({action:'keep',id:d.id,keep:!d.keep},d.keep?'No longer kept.':'Kept until you delete it.');
+  const del=el('button',{className:'btn danger',type:'button',textContent:'Delete'});del.onclick=()=>{if(del.dataset.sure){send({action:'delete',id:d.id},'Deleted.')}else{del.dataset.sure='1';del.textContent='Really delete?'}};
+  acts.append(star,del);body.append(acts);card.append(body);return card}
+function render(){
+  const box=$('drafts');box.replaceChildren();const list=state.drafts;
+  $('draftsSub').textContent=list.length?list.filter(d=>d.status==='ready').length+' ready'+(state.pending?' · '+state.pending+' waiting to render':''):'';
+  if(!list.length)box.append(el('p',{className:'empty',textContent:'No drafts yet. They appear each evening, or make one from a moment below.'}));
+  for(const d of list)box.append(draftCard(d));
+  const pk=$('picker');pk.replaceChildren();
+  if(!state.recent.length)pk.append(el('p',{className:'empty',textContent:'No confirmed cat moments in the last three days yet.'}));
+  for(const s of state.recent){const b=el('button',{className:'btn',type:'button',textContent:'Make a short'});b.onclick=()=>{b.disabled=true;send({action:'make',name:s.name},'Queued. It appears above in a minute or two.')};
+    const img=el('img',{src:'/sightings/thumb/'+encodeURIComponent(s.name)+'.jpg',alt:'',loading:'lazy'});img.onerror=()=>img.removeAttribute('src');
+    pk.append(el('div',{className:'pickcard'},img,el('div',{},el('strong',{textContent:clock(s.timestamp)+' · '+s.label}),el('small',{textContent:s.caption||s.activity}),b)))}
+  if(!document.activeElement||!document.activeElement.closest('.settings')){$('handle').value=state.settings.handle;$('autoDaily').checked=state.settings.auto_daily;$('autoWeekly').checked=state.settings.auto_weekly;$('dailyTime').value=state.settings.daily_time}
+  clearTimeout(poll);if(state.pending||list.some(d=>d.status==='rendering'))poll=setTimeout(()=>load(true),15000);
+}
+async function load(quiet){const token=++request;try{const r=await fetch('/api/studio',{cache:'no-store'});if(!r.ok)throw Error();const next=await r.json();if(token!==request)return;
+  if(state&&quiet){const playing=[...document.querySelectorAll('.draft video')].some(v=>!v.paused);if(playing){state=next;return}}
+  state=next;render()}catch(_){if(!quiet)note('Could not load the studio. Check mina and try Refresh.',true)}}
+$('refresh').onclick=()=>load();
+$('saveSettings').onclick=()=>send({action:'settings',handle:$('handle').value.trim(),auto_daily:$('autoDaily').checked,auto_weekly:$('autoWeekly').checked,daily_time:$('dailyTime').value||'20:30'},'Settings saved.');
+load();
+</script></body></html>

@@ -1,0 +1,19 @@
+# Managed by the catcam repo (deploy/install.sh)
+[Unit]
+Description=Cat Cam diary, identity and Studio
+Wants=catcam-recorder.service ollama.service
+After=catcam-recorder.service ollama.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=exec
+User=faure
+WorkingDirectory=/home/faure
+ExecStart=/home/faure/.local/share/catcam/highlights/venv/bin/python -u /home/faure/.local/share/catcam/insights.py
+Restart=always
+RestartSec=20
+Nice=10
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

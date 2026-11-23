@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#17251e"><meta name="color-scheme" content="dark">
+<title>Cat Cam · The diary</title>
+<style>
+:root{--bg:#101c16;--panel:#1b2b21;--line:#374a3c;--ink:#f0f0df;--muted:#b1bfae;--lime:#d4ec9a;--sand:#e6dfc7;--dark:#233527;--warm:#f0b77e;font:15px/1.5 system-ui,sans-serif;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink)}[hidden]{display:none!important}a{color:inherit;text-underline-offset:4px}button,select,input{font:inherit}:focus-visible{outline:2px solid var(--lime);outline-offset:3px}button{cursor:pointer}
+.wrap{width:min(1460px,100%);padding-inline:clamp(18px,4.3vw,66px);margin:auto}
+.top{min-height:77px;display:flex;justify-content:space-between;align-items:center;gap:24px;border-bottom:1px solid var(--line)}.brand{display:flex;align-items:center;gap:10px;font-weight:750;font-size:1.15rem;text-decoration:none;letter-spacing:-.035em}.catmark{color:var(--lime);width:26px;height:26px}.nav{display:flex;gap:24px;align-items:center;flex-wrap:wrap}.nav a{color:var(--muted);font-size:.85rem;text-decoration:none}.nav a:hover,.nav a[aria-current]{color:var(--ink)}.nav a[aria-current]{border-bottom:2px solid var(--lime);padding-block:26px}
+.heading{display:flex;align-items:end;justify-content:space-between;gap:22px;padding:36px 0 24px}.eyebrow{font:600 .68rem/1.5 ui-monospace,monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--lime)}h1{font:400 clamp(2.6rem,5vw,4.8rem)/1.03 Georgia,serif;letter-spacing:-.045em;margin:9px 0 12px}h1 em{color:var(--lime)}h2{font:400 1.6rem Georgia,serif;letter-spacing:-.02em;margin:0}p{margin:0}.sub{color:var(--muted);font-size:.9rem}
+select,.btn{border:1px solid #5a705b;border-radius:8px;background:var(--panel);color:var(--ink);padding:9px 12px}.btn:hover{border-color:var(--lime)}.btn.primary{background:var(--lime);color:#17251e;border-color:var(--lime);font-weight:600}.btn:disabled{opacity:.5;cursor:default}
+.grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(300px,1fr);gap:20px;align-items:start}.panel{border:1px solid var(--line);background:var(--panel);border-radius:15px;padding:20px;min-width:0}.section{margin-top:24px}.section-top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:14px;flex-wrap:wrap}.section-top .sub{font-size:.78rem}
+.diary{background:var(--sand);color:var(--dark);border-radius:15px;overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr)}.diary .photo{position:relative;aspect-ratio:16/9;background:#c9c2a8}.diary .photo img{width:100%;height:100%;object-fit:cover;display:block}.diary .photo figcaption{position:absolute;left:12px;bottom:12px;background:#17251ee0;color:#eef1db;border-radius:7px;padding:5px 9px;font-size:.72rem}.diary .body{padding:24px 26px 26px}.diary .eyebrow{color:#5c6a44}.diary h2{font-size:clamp(1.9rem,3vw,2.6rem);line-height:1.08;margin:12px 0 14px;letter-spacing:-.035em}.diary .story{font:400 1.08rem/1.62 Georgia,serif;color:#2c3d2e;white-space:pre-line}.facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin-top:22px;border-top:1px solid #bac2a8;padding-top:16px;gap:10px}.facts strong{display:block;font:400 1.9rem/1 Georgia,serif}.facts span{display:block;font-size:.68rem;color:#4b604c;margin-top:6px}.diary .meta{font-size:.7rem;color:#5d6e57;margin-top:16px}
+.board{list-style:none;margin:0;padding:0;display:grid;gap:10px}.racer{display:grid;grid-template-columns:34px 64px minmax(0,1fr);gap:12px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:11px;background:#16241b}.rank{font:400 1.6rem Georgia,serif;color:var(--lime);text-align:center}.racer img{width:64px;height:64px;object-fit:cover;border-radius:9px;background:#223529}.racer strong{font-size:1rem}.racer small{display:block;color:var(--muted);font-size:.74rem;margin-top:2px}.meter{height:7px;border-radius:5px;background:#2c3e30;margin-top:8px;overflow:hidden}.meter i{display:block;height:100%;background:linear-gradient(90deg,#a2bc7d,var(--lime));border-radius:5px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}.chip{border:1px solid #50634e;background:transparent;color:var(--ink);border-radius:20px;padding:5px 11px;font-size:.76rem}.chip[aria-pressed=true]{background:var(--lime);color:#17251e;border-color:var(--lime)}
+.heatwrap{position:relative;aspect-ratio:16/9;border-radius:11px;overflow:hidden;background:#080f0b;margin-top:12px}.heatwrap canvas{width:100%;height:100%;display:block}.spots{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.spot{font-size:.76rem;color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:5px 9px}.spot b{color:var(--ink);font-weight:600}
+.timeline{list-style:none;margin:0;padding:0;display:grid;gap:8px}.tl{display:grid;grid-template-columns:150px minmax(0,1fr);gap:14px;align-items:center;padding:8px;border-radius:11px;text-decoration:none;border:1px solid transparent}.tl:hover{background:#213425;border-color:var(--line)}.tl img{width:150px;aspect-ratio:16/9;object-fit:cover;border-radius:8px;background:#223529}.tl strong{font-size:.92rem}.tl .who{color:var(--lime)}.tl small{display:block;color:var(--muted);font-size:.74rem}.tl p{font:italic 400 .95rem/1.45 Georgia,serif;color:#dfe4cf;margin-top:4px}.tag{display:inline-block;font:600 .6rem ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;border:1px solid #e7b68d;color:#f0c7a4;border-radius:5px;padding:1px 6px;margin-left:6px;vertical-align:2px}
+.cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}.catcard{border:1px solid var(--line);border-radius:11px;padding:12px;background:#16241b;display:grid;gap:8px}.catcard img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:8px;background:#223529}.catcard label{font-size:.72rem;color:var(--muted);display:grid;gap:4px}.catcard input{background:#0f1a13;border:1px solid #50634e;border-radius:7px;color:var(--ink);padding:8px 10px}.catcard .hint{font-size:.72rem;color:var(--muted)}.catcard .remove{justify-self:start;border:0;background:transparent;color:#f0b496;font-size:.74rem;padding:0;text-decoration:underline}
+.health{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;border-block:1px solid var(--line);padding:18px 0;margin-top:28px}.health strong{font-size:.78rem;font-weight:600;display:flex;align-items:center;gap:7px}.health span{display:block;color:var(--muted);font-size:.74rem;margin-top:3px}.health code{font-size:.7rem;background:#0f1a13;border-radius:4px;padding:1px 4px;color:var(--ink)}.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block}.dot[data-ok=yes]{background:var(--lime)}.dot[data-ok=no]{background:#eca78f}
+.fix{margin:-2px 0 6px 172px;display:flex;gap:6px;align-items:center;font-size:.72rem;color:var(--muted)}.fix select{background:#0f1a13;border:1px solid #50634e;border-radius:6px;color:var(--ink);padding:3px 6px;font-size:.74rem}.who-check{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-bottom:18px}.who-card{border:1px solid var(--line);border-radius:11px;padding:8px;background:#16241b;display:grid;gap:7px}.who-card img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;background:#223529}.who-card .chips{gap:5px}.who-card small{font-size:.7rem;color:var(--muted)}
+.empty{border:1px dashed var(--line);border-radius:10px;padding:22px;color:var(--muted);font-size:.87rem}#notice{color:var(--lime);font-size:.82rem;min-height:1.3em;margin-top:10px}#notice.bad{color:#f2c1a4}.footnote{padding:17px 0 30px;font-size:.68rem;color:var(--muted)}
+@media(max-width:1000px){.grid{grid-template-columns:1fr}.health{grid-template-columns:1fr 1fr}}
+@media(max-width:640px){.fix{margin-left:124px}.top{align-items:start;flex-direction:column;gap:10px;padding:18px 0 12px;min-height:0}.nav{gap:16px}.nav a[aria-current]{padding-block:0 6px}.heading{flex-direction:column;align-items:start}.facts{grid-template-columns:1fr 1fr}.tl{grid-template-columns:110px minmax(0,1fr)}.tl img{width:110px}.health{grid-template-columns:1fr}}
+</style></head><body>
+<div class="wrap"><header class="top"><a class="brand" href="/" aria-label="Cat Cam home"><svg class="catmark" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M6 16 5 5l9 6h4l9-6-1 11c4 15-24 15-20 0Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M11 19h1m8 0h1m-7 4 2 2 2-2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Cat Cam</a>
+<nav class="nav" aria-label="Cat camera"><a href="/">The window</a><a href="/insights/" aria-current="page">Diary</a><a href="/studio/">Studio</a><a href="/sightings/">Sightings</a><a href="/camera/">Camera</a><a href="/storage/">Storage</a></nav></header>
+<main>
+<div class="heading"><div><div class="eyebrow">Mina · The cat diary</div><h1>Who was <em>at the window.</em></h1><p class="sub">Written each day by a small AI model running on mina, from what the camera saw.</p></div>
+<div><label for="day" class="eyebrow">Day&nbsp;</label><select id="day" disabled><option>Loading…</option></select> <button class="btn" id="refresh" type="button">Refresh</button></div></div>
+
+<div class="grid">
+<article class="diary" aria-labelledby="diaryTitle"><figure class="photo" id="photoBox" hidden style="margin:0"><a id="photoLink" href="/sightings/"><img id="photo" alt=""></a><figcaption id="photoCaption">Photo of the day</figcaption></figure>
+<div class="body"><div class="eyebrow" id="diaryDate">Today</div><h2 id="diaryTitle">Opening the diary…</h2><p class="story" id="diaryStory">One moment.</p>
+<div class="facts"><div><strong id="fSightings">—</strong><span>cat sightings</span></div><div><strong id="fWeek">—</strong><span id="fWeekLabel">same day last week</span></div><div><strong id="fHour">—</strong><span>busiest hour</span></div><div><strong id="fStreak">—</strong><span>day streak</span></div></div>
+<p class="meta" id="diaryMeta"></p></div></article>
+
+<section class="panel" aria-labelledby="boardTitle"><div class="section-top"><h2 id="boardTitle">The regulars</h2><span class="sub" id="boardSub">Last 7 days</span></div><ol class="board" id="board"><li class="empty">Counting cats…</li></ol><p class="sub" style="font-size:.72rem;margin-top:12px">Ranked by minutes in recorded clips, not total time in the room.</p></section>
+</div>
+
+<div class="grid section">
+<section class="panel" aria-labelledby="heatTitle"><div class="section-top"><h2 id="heatTitle">Favorite spots</h2><span class="sub">Where cats were seen over the last 7 days</span></div><div class="chips" id="heatChips"></div><div class="heatwrap"><canvas id="heat" width="1280" height="720" aria-label="Map of where cats were seen, drawn over the current camera view"></canvas></div><div class="spots" id="spots"></div></section>
+<section class="panel" aria-labelledby="momentsTitle"><div class="section-top"><h2 id="momentsTitle">The day in moments</h2><span class="sub" id="momentsSub"></span></div><ul class="timeline" id="timeline"><li class="empty">Loading…</li></ul></section>
+</div>
+
+<section class="panel section" aria-labelledby="catsTitle"><div class="section-top"><h2 id="catsTitle">Name your cats</h2><span class="sub">Names and descriptions help the model tell your cats apart. Changes re-label the last two weeks.</span></div>
+<div id="whoBox" hidden><p class="sub" style="font-size:.82rem;margin-bottom:10px">Optional: tap who each cat is. Mina learns from every answer and re-labels the rest.</p><div class="who-check" id="who"></div></div><div class="cats" id="cats"></div>
+<div style="display:flex;gap:9px;margin-top:14px;flex-wrap:wrap"><button class="btn" id="addCat" type="button">Add a cat</button><button class="btn primary" id="saveCats" type="button">Save names</button></div><p id="notice" role="status"></p></section>
+
+<div class="health" aria-label="System status"><div><strong><i class="dot" id="hCamDot"></i>Camera</strong><span id="hCam">Checking…</span></div><div><strong><i class="dot" id="hAiDot"></i>Diary model</strong><span id="hAi">Checking…</span></div><div><strong><i class="dot" id="hTgDot"></i>Phone alerts</strong><span id="hTg">Checking…</span></div><div><strong><i class="dot" id="hGuardDot"></i>Exposure guard</strong><span id="hGuard">Checking…</span></div></div>
+<footer class="footnote">Labels come from an AI model and can be wrong. Sightings, reels and recordings are unchanged by the diary.</footer>
+</main></div>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+let info=null,catsDraft=[],heatFilter='all',bg=null,dirty=false,request=0;
+const initialDay=new URLSearchParams(location.search).get('day')||'';
+const dayLabel=d=>new Date(d+'T12:00:00').toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'});
+const shortDay=d=>new Date(d+'T12:00:00').toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'});
+const clock=s=>new Date(s).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+const hourLabel=h=>h===null||h===undefined?'—':new Date(2000,0,1,h).toLocaleTimeString([],{hour:'numeric'});
+const ago=s=>{const m=Math.round((Date.now()-new Date(s))/60000);return m<2?'just now':m<60?m+' min ago':m<1440?Math.round(m/60)+' h ago':Math.round(m/1440)+' d ago'};
+const thumb=n=>'/sightings/thumb/'+encodeURIComponent(n)+'.jpg';
+const link=n=>'/sightings/?day='+n.slice(0,4)+'-'+n.slice(4,6)+'-'+n.slice(6,8)+'&clip='+encodeURIComponent(n);
+const el=(tag,props={},...kids)=>{const e=document.createElement(tag);Object.assign(e,props);e.append(...kids);return e};
+const palette=['#d4ec9a','#f0b77e','#9fd3e6','#e9a3c9','#c6b3f2','#f2e08a','#8fe0b8','#f29f8f'];
+function note(text,bad=false){$('notice').textContent=text;$('notice').className=bad?'bad':''}
+function img(src){const i=el('img',{src,alt:'',loading:'lazy',decoding:'async'});i.onerror=()=>{i.removeAttribute('src');i.onerror=null};return i}
+
+function renderDiary(){
+  const d=info.diary,day=info.day;
+  $('diaryDate').textContent=(day===info.today?'Today · ':'')+dayLabel(day);
+  if(!d){$('diaryTitle').textContent=info.ready?'The diary is still being written.':'The diary starts soon.';
+    $('diaryStory').textContent=info.ready?'Mina writes this page once it has looked at the day’s sightings.':'Mina’s diary service has not reported yet. It starts shortly after installation.';
+    $('photoBox').hidden=true;$('diaryMeta').textContent='';}
+  else{$('diaryTitle').textContent=d.title;$('diaryStory').textContent=d.story;
+    $('photoBox').hidden=!d.best;if(d.best){$('photo').src=thumb(d.best);$('photoLink').href=link(d.best);const r=info.sightings.find(s=>s.name===d.best);$('photoCaption').textContent=r?clock(r.timestamp)+' · '+r.label:'Photo of the day'}
+    $('diaryMeta').textContent=d.generated==='template'?'':'Written by '+d.generated+' · updated '+ago(d.generated_at*1000)+(d.facts&&d.facts.false_alarms?' · '+d.facts.false_alarms+' false alarm'+(d.facts.false_alarms===1?'':'s')+' left out':'');}
+  const f=d&&d.facts||{};
+  $('fSightings').textContent=f.sightings??(info.sightings.filter(s=>s.is_cat).length||'0');
+  $('fWeek').textContent=f.same_day_last_week??'—';$('fWeekLabel').textContent='last '+new Date(day+'T12:00:00').toLocaleDateString([],{weekday:'long'});
+  $('fHour').textContent=hourLabel(f.busiest_hour);$('fStreak').textContent=info.stats?info.stats.streak_days:'—';
+}
+function renderBoard(){
+  const b=$('board'),s=info.stats;b.replaceChildren();
+  if(!s||!s.leaderboard.length){b.append(el('li',{className:'empty',textContent:'No confirmed cat sightings in the last 7 days yet.'}));$('boardSub').textContent='Last 7 days';return}
+  const top=Math.max(...s.leaderboard.map(r=>r.minutes),0.1);
+  const delta=s.sightings-s.previous_period;
+  $('boardSub').textContent=s.sightings+' sightings in 7 days'+(s.previous_period?' · '+(delta>=0?'+':'')+delta+' vs the week before':'');
+  s.leaderboard.forEach((r,i)=>{
+    const bits=[r.minutes+' min on camera',r.sightings+' sighting'+(r.sightings===1?'':'s')];
+    const more=[r.favorite_spot&&'loves the '+r.favorite_spot,r.favorite_activity&&'usually '+r.favorite_activity,r.favorite_hour!==null&&'peak '+hourLabel(r.favorite_hour)].filter(Boolean);
+    const meter=el('div',{className:'meter'},el('i'));meter.firstChild.style.width=Math.max(4,r.minutes/top*100)+'%';
+    const a=el('a',{href:r.best?link(r.best):'#',style:'display:contents;text-decoration:none'});
+    b.append(el('li',{className:'racer'},el('span',{className:'rank',textContent:i===0?'🏆':String(i+1)}),r.best?img(thumb(r.best)):el('span'),
+      el('div',{},el('strong',{textContent:r.named?r.name:'Unnamed cat'}),el('small',{textContent:bits.join(' · ')}),el('small',{textContent:more.join(' · ')+(r.last_seen?' · seen '+ago(r.last_seen):'')}),meter)));
+  });
+}
+function drawHeat(){
+  const c=$('heat'),x=c.getContext('2d'),s=info.stats;
+  x.globalCompositeOperation='source-over';x.fillStyle='#080f0b';x.fillRect(0,0,1280,720);
+  if(bg&&bg.complete&&bg.naturalWidth){x.globalAlpha=.55;x.drawImage(bg,0,0,1280,720);x.globalAlpha=1}
+  x.fillStyle='rgba(8,15,11,.35)';x.fillRect(0,0,1280,720);
+  if(!s||!s.heat.length){x.fillStyle='#b1bfae';x.font='28px Georgia';x.textAlign='center';x.fillText('No cat positions yet',640,360);return}
+  const names=[...new Set(s.heat.map(h=>h[4]))];
+  const shown=s.heat.filter(h=>heatFilter==='all'||h[4]===heatFilter),alpha=Math.round(255*Math.min(.45,Math.max(.1,.9/Math.sqrt(shown.length||1)))).toString(16).padStart(2,'0');
+  x.globalCompositeOperation='screen';
+  for(const [cx,cy,w,h,who] of shown){
+    const color=palette[names.indexOf(who)%palette.length],r=Math.max(40,Math.min(w*1280,h*720)*.6),g=x.createRadialGradient(cx*1280,cy*720,0,cx*1280,cy*720,r);
+    g.addColorStop(0,color+alpha);g.addColorStop(1,color+'00');x.fillStyle=g;x.beginPath();x.arc(cx*1280,cy*720,r,0,Math.PI*2);x.fill()}
+  x.globalCompositeOperation='source-over';
+}
+function renderHeat(){
+  const chips=$('heatChips'),s=info.stats;chips.replaceChildren();
+  const names=s?[...new Set(s.heat.map(h=>h[4]))]:[];
+  for(const n of ['all',...names]){const b=el('button',{className:'chip',type:'button',textContent:n==='all'?'All cats':n==='Unnamed'?'Unnamed':n});
+    b.setAttribute('aria-pressed',String(heatFilter===n));if(n!=='all')b.style.borderColor=palette[names.indexOf(n)%palette.length];
+    b.onclick=()=>{heatFilter=n;renderHeat()};chips.append(b)}
+  const sp=$('spots');sp.replaceChildren();for(const [name,count] of (s?s.spots:[]))sp.append(el('span',{className:'spot'},el('b',{textContent:name}),' · '+count));
+  if(!bg){bg=new Image();bg.onload=drawHeat;bg.src='/frame?ts='+Date.now()}
+  drawHeat();
+}
+function renderTimeline(){
+  const t=$('timeline'),list=info.sightings;t.replaceChildren();
+  const real=list.filter(s=>s.is_cat).length;$('momentsSub').textContent=list.length?real+' with cats'+(list.length>real?' · '+(list.length-real)+' maybe not':''):'';
+  if(!list.length){t.append(el('li',{className:'empty',textContent:info.day===info.today?'No sightings looked at yet today.':'No sightings were looked at on this day.'}));return}
+  for(const s of list){const head=el('strong',{},clock(s.timestamp)+' · ',el('span',{className:'who',textContent:s.is_cat?s.label:'Maybe not a cat'}));
+    if(!s.is_cat)head.append(el('span',{className:'tag',textContent:'check'}));
+    const detail=s.is_cat?[s.activity,s.spot&&'on the '+s.spot].filter(Boolean).join(' '):'The model did not see a cat here';
+    const body=el('div',{},head,el('small',{textContent:detail}),el('p',{textContent:s.caption||''}));let fixer=null;
+    if(info.cats.length){const sel=el('select',{'aria-label':'Correct who this is'});sel.append(el('option',{value:'',textContent:'Not right?'}));for(const c of info.cats)sel.append(el('option',{value:c.name,textContent:'It\'s '+c.name}));sel.append(el('option',{value:'none',textContent:'Not a cat'}));
+      sel.onchange=()=>{if(sel.value)fix(s.name,sel.value)};fixer=el('div',{className:'fix'},sel)}
+    const li=el('li',{},el('a',{className:'tl',href:link(s.name)},img(thumb(s.name)),body));if(fixer)li.append(fixer);t.append(li)}
+}
+async function fix(sighting,cat){try{const r=await fetch('/api/insights/fix',{method:'POST',headers:{'Content-Type':'application/json','X-Catcam-Action':'fix-cat'},body:JSON.stringify({sighting,cat})});if(!r.ok)throw Error();note(cat==='none'?'Marked as not a cat. Thanks!':'Got it: '+cat+'. Mina will re-label similar moments in a minute or two.');setTimeout(()=>load(info.day,true),60000)}catch(_){note('Could not save that fix.',true)}}
+function renderWho(){const box=$('who'),list=info.unsure||[];$('whoBox').hidden=!list.length||!info.cats.length;box.replaceChildren();
+  for(const s of list){const chips=el('div',{className:'chips'});for(const c of info.cats){const b=el('button',{className:'chip',type:'button',textContent:c.name});b.onclick=()=>{fix(s.name,c.name);card.remove()};chips.append(b)}
+    const no=el('button',{className:'chip',type:'button',textContent:'Not a cat'});no.onclick=()=>{fix(s.name,'none');card.remove()};chips.append(no);
+    const pic=el('img',{src:'/insights/crop/'+encodeURIComponent(s.name)+'.jpg',alt:'Cat to identify',loading:'lazy'});const card=el('div',{className:'who-card'},pic,el('small',{textContent:clock(s.timestamp)+' · '+dayLabel(s.timestamp.slice(0,10))}),chips);box.append(card)}}
+function renderCats(){
+  const box=$('cats');box.replaceChildren();
+  catsDraft.forEach((c,i)=>{const name=el('input',{value:c.name,maxLength:40,placeholder:'Name'}),desc=el('input',{value:c.description,maxLength:160,placeholder:'What they look like, e.g. black cat with white paws'}),pers=el('input',{value:c.personality||'',maxLength:200,placeholder:'e.g. chaotic, nosy, always busy'});pers.oninput=()=>{c.personality=pers.value;dirty=true};
+    name.oninput=()=>{c.name=name.value;dirty=true};desc.oninput=()=>{c.description=desc.value;dirty=true};
+    const rm=el('button',{className:'remove',type:'button',textContent:'Remove'});rm.onclick=()=>{catsDraft.splice(i,1);dirty=true;renderCats()};
+    const card=el('div',{className:'catcard'});if(c.example)card.append(img(thumb(c.example)));
+    card.append(el('label',{},'Name',name),el('label',{},'Looks like',desc),el('label',{},'Personality (for the diary and captions)',pers),rm);box.append(card)});
+  const named=new Set(catsDraft.map(c=>c.description.toLowerCase()));
+  for(const g of (info.stats?info.stats.unnamed:[])){if(named.has(g.appearance))continue;
+    const name=el('input',{maxLength:40,placeholder:'Who is this?'}),add=el('button',{className:'btn',type:'button',textContent:'Add this cat'});
+    add.onclick=()=>{if(!name.value.trim()){name.focus();return}catsDraft.push({name:name.value.trim(),description:g.appearance,personality:'',example:g.example});dirty=true;renderCats();note('Added. Select Save names to keep it.')};
+    box.append(el('div',{className:'catcard'},img(thumb(g.example)),el('span',{className:'hint',textContent:'Seen '+g.sightings+'× this week, described as “'+g.appearance+'”'}),el('label',{},'Name',name),add))}
+  if(!box.children.length)box.append(el('p',{className:'empty',textContent:'When the model has seen your cats, they appear here so you can name them. You can also add them yourself.'}));
+}
+function renderHealth(){
+  const st=info.status||{},cam=info.camera||{},g=st.guard||{};
+  const set=(id,ok,text)=>{$(id+'Dot').dataset.ok=ok===null?'':ok?'yes':'no';$(id).textContent=text};
+  set('hCam',cam.online,cam.online===true?'Online and streaming':cam.online===false?'Disconnected. Check PCCAM mode.':'Status unavailable');
+  if(!info.ready)set('hAi',false,'The diary service has not reported yet.');
+  else set('hAi',st.model_state==='ready',(st.model||'Model')+': '+(st.model_state||'unknown')+(st.waiting?' · '+st.waiting+' waiting':'')+' · '+(st.analyzed||0)+' looked at'+(st.identity?' · photo ID on':''));
+  const tg=$('hTg');if(st.telegram){set('hTg',true,'Telegram connected'+(st.arrival_alerts?' · arrival alerts':'')+(st.morning_diary?' · diary at '+st.morning_time:''))}
+  else{set('hTg',null,'');tg.replaceChildren('Not connected. On mina run ',el('code',{textContent:'catcam-insights --setup-telegram'}))}
+  const last=(g.events||[]).filter(e=>e.kind==='reset').pop();
+  set('hGuard',g.installed?true:null,g.installed?(last?'Last automatic reset '+ago(last.time):'No resets needed'):'Not installed');
+}
+function render(){
+  const opts=$('day');opts.replaceChildren();for(const d of info.days)opts.append(el('option',{value:d,textContent:(d===info.today?'Today · ':'')+shortDay(d)}));opts.value=info.day;opts.disabled=false;
+  renderDiary();renderBoard();renderHeat();renderTimeline();renderWho();if(!dirty){catsDraft=info.cats.map(c=>({...c}));}renderCats();renderHealth();
+}
+async function load(day,quiet){const token=++request;$('refresh').disabled=true;
+  try{const r=await fetch('/api/insights'+(day?'?day='+encodeURIComponent(day):''),{cache:'no-store'});if(!r.ok)throw Error();const next=await r.json();if(token!==request)return;info=next;render();
+    const u=new URL(location.href);if(info.day===info.today)u.searchParams.delete('day');else u.searchParams.set('day',info.day);history.replaceState(null,'',u);
+  }catch(_){if(!quiet)note('Could not load the diary. Check mina and try Refresh.',true)}finally{$('refresh').disabled=false}}
+$('day').onchange=()=>load($('day').value);$('refresh').onclick=()=>{bg=null;load(info?info.day:'')};
+$('addCat').onclick=()=>{catsDraft.push({name:'',description:'',personality:''});dirty=true;renderCats();const inputs=$('cats').querySelectorAll('input');inputs[inputs.length-3]?.focus()};
+$('saveCats').onclick=async()=>{const cats=catsDraft.map(c=>({name:c.name.trim(),description:c.description.trim(),personality:(c.personality||'').trim()})).filter(c=>c.name);
+  $('saveCats').disabled=true;try{const r=await fetch('/api/insights/cats',{method:'POST',headers:{'Content-Type':'application/json','X-Catcam-Action':'set-cats'},body:JSON.stringify({cats})});
+    if(!r.ok)throw Error(r.status===400?'Each cat needs a different name, up to 8 cats.':'Could not save the names.');dirty=false;note('Saved. Mina will re-label recent sightings over the next few minutes.');await load(info.day,true)}
+  catch(e){note(e.message,true)}finally{$('saveCats').disabled=false}};
+setInterval(()=>{if(!document.hidden&&!dirty)load(info?info.day:initialDay,true)},90000);
+load(initialDay);
+</script></body></html>

@@ -1,0 +1,4 @@
+#!/bin/sh
+# Cat Cam diary tools: catcam-insights --status | --setup-telegram | --test-telegram | --diary [DAY] | --reanalyze
+if [ "$(id -un)" != faure ]; then exec sudo -u faure -H "$0" "$@"; fi
+exec /home/faure/.local/share/catcam/highlights/venv/bin/python /home/faure/.local/share/catcam/insights.py "$@"

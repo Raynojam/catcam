@@ -1,0 +1,20 @@
+# Managed by the catcam repo (deploy/install.sh)
+[Unit]
+Description=Cat Cam frame stage (windowsill crop and low-light fix)
+StartLimitIntervalSec=0
+RequiresMountsFor=/home/faure
+
+[Service]
+Type=exec
+User=faure
+SupplementaryGroups=video
+WorkingDirectory=/home/faure
+ExecStart=/usr/bin/python3 -u /home/faure/.local/share/catcam/frame.py
+Restart=always
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=15
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target
