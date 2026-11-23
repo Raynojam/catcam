@@ -22,3 +22,17 @@ def test_pages_have_no_broken_nav():
     for page in (ROOT / "app/pages").glob("*.html"):
         html = page.read_text()
         assert 'href="/camera/"' in html and 'href="/insights/"' in html, page.name
+
+
+def test_stuck_blue_is_spotted_but_a_normal_room_is_not():
+    assert catcam_guard.is_blue({"mean": 80, "clipped": 0.0, "cast": 0.24})      # this morning's frame
+    assert not catcam_guard.is_blue({"mean": 125, "clipped": 0.0, "cast": -0.01})  # daylight, normal
+    assert not catcam_guard.is_blue({"mean": 30, "clipped": 0.0, "cast": 0.2})     # dark night, blue LEDs
+
+
+def test_reset_button_request_is_taken_once(tmp_path, monkeypatch):
+    flag = tmp_path / "reset-request"
+    monkeypatch.setattr(catcam_guard, "RESET_REQUEST", str(flag))
+    flag.write_text("x")
+    assert catcam_guard.reset_requested() and not flag.exists()
+    assert not catcam_guard.reset_requested()

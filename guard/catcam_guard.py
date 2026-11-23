@@ -39,6 +39,10 @@ COOLDOWN        = env("CATCAM_COOLDOWN_SECONDS", 600, int)  # wait after a reset
 MAX_RESETS      = env("CATCAM_MAX_RESETS", 3, int)          # per RESET_WINDOW
 RESET_WINDOW    = env("CATCAM_RESET_WINDOW_SECONDS", 6 * 3600, int)
 STATE_FILE      = env("CATCAM_STATE_FILE", "/var/lib/catcam-guard/state.json")
+CAST_MAX        = env("CATCAM_CAST_MAX", 0.15, float)      # blue minus red, 0-1: the AKASO's stuck colour
+CAST_CHECKS     = env("CATCAM_CAST_CHECKS", 10, int)        # 10 x 30s = 5 minutes of it
+RESET_REQUEST   = env("CATCAM_RESET_REQUEST", "/home/faure/.local/share/catcam/frame/reset-request")
+MANUAL_GAP      = 300                                       # at most one button reset per 5 minutes
 
 USBDEVFS_RESET = 0x5514  # _IO('U', 20)
 
@@ -81,7 +85,7 @@ def source_online():
         return None
 
 def measure():
-    """Return {'mean': 0-255, 'clipped': 0-1} for the current frame, or None."""
+    """Return {'mean': 0-255, 'clipped': 0-1, 'cast': blue minus red 0-1} for the current frame, or None."""
     try:
         with urllib.request.urlopen(STREAM_URL + "/snapshot", timeout=10) as r:
             jpeg = r.read()
@@ -90,17 +94,37 @@ def measure():
         return None
     p = subprocess.run(
         ["ffmpeg", "-nostdin", "-loglevel", "error", "-i", "pipe:0",
-         "-frames:v", "1", "-vf", "scale=96:54,format=gray", "-f", "rawvideo", "pipe:1"],
+         "-frames:v", "1", "-vf", "scale=96:54,format=rgb24", "-f", "rawvideo", "pipe:1"],
         input=jpeg, capture_output=True, timeout=20)
     px = p.stdout
     if p.returncode != 0 or not px:
         log(f"could not decode snapshot: {p.stderr.decode(errors='replace').strip()[:200]}")
         return None
-    return {"mean": round(sum(px) / len(px), 1),
-            "clipped": round(sum(1 for v in px if v >= 245) / len(px), 3)}
+    reds, greens, blues = px[0::3], px[1::3], px[2::3]
+    grey = [(r * 299 + g * 587 + b * 114) // 1000 for r, g, b in zip(reds, greens, blues)]
+    return {"mean": round(sum(grey) / len(grey), 1),
+            "clipped": round(sum(1 for v in grey if v >= 245) / len(grey), 3),
+            "cast": round((sum(blues) - sum(reds)) / len(blues) / 255, 3)}
 
 def is_washed_out(m):
     return m is not None and m["mean"] >= MEAN_MAX and m["clipped"] >= CLIPPED_MAX
+
+
+def is_blue(m):
+    """The AKASO's other stuck state: white balance locked far too blue in daylight."""
+    return m is not None and m.get("cast", 0) >= CAST_MAX and m["mean"] >= 50
+
+
+def reset_requested():
+    """The Camera page's "Reset the camera" button leaves this file for the guard (which runs as root)."""
+    try:
+        if os.path.getmtime(RESET_REQUEST) < time.time() - 600:
+            os.unlink(RESET_REQUEST)
+            return False
+        os.unlink(RESET_REQUEST)
+        return True
+    except OSError:
+        return False
 
 
 # ---------- recovering ----------
@@ -177,9 +201,18 @@ def watch(dry_run=False):
     log(f"watching {STREAM_URL} every {CHECK_SECONDS}s; reset after {BAD_CHECKS} bad checks "
         f"(mean>={MEAN_MAX:g} and clipped>={CLIPPED_MAX:g}, or source offline)")
     time.sleep(min(60, CHECK_SECONDS * 2))  # let the camera service settle after boot
-    bad = 0
+    bad = blue = 0
     gave_up_logged = False
+    last_manual = 0.0
     while True:
+        if reset_requested():
+            if time.time() - last_manual >= MANUAL_GAP:
+                last_manual = time.time()
+                recover(state, "reset from the Camera page", dry_run)
+                bad = blue = 0
+                time.sleep(15)
+                continue
+            log("reset button pressed again within 5 minutes; ignoring")
         online = source_online()
         m = measure() if online is not False else None
         if online is not False and m is None:
@@ -189,10 +222,16 @@ def watch(dry_run=False):
             bad += 1; why = "camera offline"
         elif is_washed_out(m):
             bad += 1; why = f"picture washed out (mean {m['mean']}, {m['clipped']:.0%} white)"
+        elif is_blue(m):
+            blue += 1
+            why = f"picture stuck blue (cast {m['cast']})"
+            bad = BAD_CHECKS if blue >= CAST_CHECKS else 0
+            if blue in (1, CAST_CHECKS // 2):
+                log(f"{why} [{blue}/{CAST_CHECKS}]")
         else:
             if bad:
                 log(f"picture back to normal (mean {m['mean'] if m else '?'})")
-            bad = 0; why = ""; gave_up_logged = False
+            bad = blue = 0; why = ""; gave_up_logged = False
         if bad and not gave_up_logged:
             log(f"{why} [{bad}/{BAD_CHECKS}]")
         if bad >= BAD_CHECKS:
@@ -207,7 +246,7 @@ def watch(dry_run=False):
             else:
                 gave_up_logged = False
                 recover(state, why, dry_run)
-                bad = 0
+                bad = blue = 0
                 time.sleep(COOLDOWN if not dry_run else CHECK_SECONDS)
                 continue
         time.sleep(CHECK_SECONDS)

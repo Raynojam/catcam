@@ -70,3 +70,8 @@ def test_insights_overview_reads_the_diary_and_unsure_list():
 
 def test_missing_pages_explain_themselves():
     assert b"catcam-update" in catcam.page("does-not-exist.html")
+
+
+def test_reset_button_leaves_a_request_for_the_guard():
+    assert catcam.camera_request({"action": "reset"}) == {"reset": True}
+    assert (catcam.FRAME_DIR / "reset-request").is_file()

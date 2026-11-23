@@ -61,7 +61,7 @@ SHORT_LOCK = threading.RLock()
 SHORT_JOBS = {}
 SHORT_WORKER = None
 
-APP_VERSION = "2026.11.23.1"
+APP_VERSION = "2026.11.23.2"
 
 # Cat Cam Plus: a stronger detector when present, and the diary written by insights.py.
 STRONG_MODEL = HIGHLIGHT_DATA / "yolox_s.onnx"
@@ -122,6 +122,10 @@ def camera_request(body):
         (FRAME_DIR / "preview-request").write_text(str(time.time()))
         os.utime(FRAME_DIR / "preview-request")
         return {"preview": True}
+    if action == "reset":
+        # catcam-guard (root) picks this up within 30 s and resets the camera over USB.
+        (FRAME_DIR / "reset-request").write_text(str(time.time()))
+        return {"reset": True}
     if action != "save":
         raise ValueError("Unknown camera action")
     zone = body.get("zone")
