@@ -62,6 +62,9 @@ fi
 [ -f "$HD/yolox_s.onnx" ] || warn "YOLOX-S isn't installed; the detector uses YOLOX-Nano (fine, just less sharp)."
 
 say "2/5 Backing up what is installed now"
+if [ -f "$ROLLBACK/.incomplete" ]; then
+  echo "  The last install didn't finish; keeping the backup it made of the version before it."
+else
 rm -rf "$ROLLBACK" && mkdir -p "$ROLLBACK/helpers"
 [ -f "$APP" ] && cp -p "$APP" "$ROLLBACK/catcam.py"
 for h in "${HELPERS[@]}"; do [ -f "$SHARE/$h" ] && cp -p "$SHARE/$h" "$ROLLBACK/helpers/$h"; done
@@ -69,13 +72,15 @@ for h in "${HELPERS[@]}"; do [ -f "$SHARE/$h" ] && cp -p "$SHARE/$h" "$ROLLBACK/
 [ -f /usr/local/bin/catcam-guard ] && cp -p /usr/local/bin/catcam-guard "$ROLLBACK/catcam-guard"
 [ -f "$RELEASE/version" ] && cp -p "$RELEASE/version" "$ROLLBACK/version"
 [ -f "$RELEASE/commit" ] && cp -p "$RELEASE/commit" "$ROLLBACK/commit"
+touch "$ROLLBACK/.incomplete"
 echo "  saved in $ROLLBACK"
+fi
 
 restore() {
   warn "Putting the previous version back."
-  [ -f "$ROLLBACK/catcam.py" ] && cp -p "$ROLLBACK/catcam.py" "$APP"
+  [ -f "$ROLLBACK/catcam.py" ] && cp -pf "$ROLLBACK/catcam.py" "$APP"
   for h in "${HELPERS[@]}"; do
-    if [ -f "$ROLLBACK/helpers/$h" ]; then cp -p "$ROLLBACK/helpers/$h" "$SHARE/$h"; else rm -f "$SHARE/$h"; fi
+    if [ -f "$ROLLBACK/helpers/$h" ]; then cp -pf "$ROLLBACK/helpers/$h" "$SHARE/$h"; else rm -f "$SHARE/$h"; fi
   done
   rm -rf "$SHARE/pages"; [ -d "$ROLLBACK/pages" ] && cp -rp "$ROLLBACK/pages" "$SHARE/pages"
   [ -f "$ROLLBACK/catcam-guard" ] && sudo install -m 0755 "$ROLLBACK/catcam-guard" /usr/local/bin/catcam-guard
@@ -93,9 +98,9 @@ restore() {
 
 say "3/5 Installing files"
 mkdir -p "$SHARE" "$RELEASE"
-for h in "${HELPERS[@]}"; do install -m 0644 "$REPO/app/$h" "$SHARE/$h"; done
+for h in "${HELPERS[@]}"; do install -m 0644 "$REPO/app/$h" "$SHARE/$h.new" && mv -f "$SHARE/$h.new" "$SHARE/$h"; done
 rm -rf "$SHARE/pages.new" && cp -r "$REPO/app/pages" "$SHARE/pages.new" && rm -rf "$SHARE/pages" && mv "$SHARE/pages.new" "$SHARE/pages"
-install -m 0644 "$REPO/app/catcam.py" "$APP.new" && mv "$APP.new" "$APP"
+install -m 0444 "$REPO/app/catcam.py" "$APP.new" && mv -f "$APP.new" "$APP"   # read-only, as before
 sudo install -m 0755 "$REPO/guard/catcam_guard.py" /usr/local/bin/catcam-guard
 "$VENV_PY" -c "import ast,sys;[ast.parse(open(f).read()) for f in sys.argv[1:]]" "$APP" "${HELPERS[@]/#/$SHARE/}"
 
@@ -145,6 +150,7 @@ if [ "$SITE" != 1 ] || [ "$STREAM" != 1 ]; then
   die "Cat Cam $VERSION failed its checks and the previous version is back. Send Claude the lines above."
 fi
 echo "$VERSION" > "$RELEASE/version"
+rm -f "$ROLLBACK/.incomplete"
 git -C "$REPO" rev-parse HEAD > "$RELEASE/commit" 2>/dev/null || true
 sha "$APP" > "$RELEASE/catcam.sha"
 echo "  Site, camera and stream are up."
