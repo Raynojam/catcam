@@ -106,11 +106,11 @@ class Embedder:
         x = max(0.0, min(1280 - side, cx * 1280 - side / 2))
         y = max(0.0, min(720 - side, cy * 720 - side / 2))
         crop = f"scale=1280:720,crop={int(side)}:{int(side)}:{int(x)}:{int(y)}"
-        args = ["ffmpeg", "-v", "error", "-ss", f"{at:.3f}", "-i", str(CLIPS / name), "-frames:v", "1",
+        args = ["ffmpeg", "-v", "error", "-y", "-ss", f"{at:.3f}", "-i", str(CLIPS / name),
                 "-filter_complex", f"[0:v]{crop},split=2[a][b];[a]scale={SIDE}:{SIDE}[raw];[b]scale=256:256[jpg]",
-                "-map", "[raw]", "-pix_fmt", "rgb24", "-f", "rawvideo", "pipe:1"]
+                "-map", "[raw]", "-frames:v", "1", "-pix_fmt", "rgb24", "-f", "rawvideo", "pipe:1"]
         CROPS.mkdir(parents=True, exist_ok=True)
-        args += ["-map", "[jpg]", "-q:v", "4", "-y", str(CROPS / (name + ".jpg"))]
+        args += ["-map", "[jpg]", "-frames:v", "1", "-update", "1", "-q:v", "4", str(CROPS / (name + ".jpg"))]
         result = subprocess.run(args, stdin=subprocess.DEVNULL, capture_output=True, timeout=30)
         if result.returncode or len(result.stdout) != SIDE * SIDE * 3:
             raise RuntimeError("could not crop the cat")

@@ -44,8 +44,8 @@ say "1/5 System pieces"
 dpkg -s v4l2loopback-dkms >/dev/null 2>&1 || sudo apt-get install -y v4l2loopback-dkms v4l2loopback-utils
 echo 'options v4l2loopback video_nr=10 card_label=CatCamFrame exclusive_caps=1' | sudo tee /etc/modprobe.d/catcam-v4l2loopback.conf >/dev/null
 echo 'v4l2loopback' | sudo tee /etc/modules-load.d/catcam.conf >/dev/null
-if [ ! -e /dev/video10 ]; then sudo modprobe v4l2loopback; sleep 1; fi
-grep -q '^CatCam' /sys/class/video4linux/video10/name 2>/dev/null || die "/dev/video10 is not the Cat Cam virtual camera; check: cat /sys/class/video4linux/video10/name"
+if [ ! -e "${CATCAM_LOOPBACK_DEV:-/dev/video10}" ]; then sudo modprobe v4l2loopback; sleep 1; fi
+grep -q '^CatCam' "${CATCAM_LOOPBACK_NAME:-/sys/class/video4linux/video10/name}" 2>/dev/null || die "/dev/video10 is not the Cat Cam virtual camera; check: cat /sys/class/video4linux/video10/name"
 for f in "$REPO"/deploy/units/*.service; do systemd-analyze verify "$f" 2>&1 | grep -v -e 'ollama.service' -e '^$' || true; done
 sudo install -m 0644 "$REPO"/deploy/units/catcam-frame.service "$REPO"/deploy/units/catcam-insights.service "$UNITS/"
 sudo install -d "$UNITS/catcam-camera.service.d"
