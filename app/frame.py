@@ -13,12 +13,14 @@ When the Camera page asks for a preview, a full-frame snapshot is written every
 2 seconds for two minutes, so the zone can be drawn; it is deleted afterwards.
 """
 
+from collections import deque
 import json
 import os
 import re
 import signal
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -31,6 +33,9 @@ PREVIEW_REQUEST = STATE_DIR / "preview-request"
 LOOPBACK = Path("/dev/video10")
 LOOPBACK_LABEL = "CatCamFrame"
 PREVIEW_SECONDS = 120
+STARTUP_TIMEOUT = 30
+FRAME_TIMEOUT = 15
+STATUS_INTERVAL = 5
 DEFAULTS = {"enabled": True, "zone": None, "low_light": True, "strength": 0.5, "output": "1280x720",
             "capture": "1920x1080", "fps": 15, "camera": "brave 7 le"}
 OUTPUTS = {"1280x720", "1920x1080"}
@@ -142,13 +147,51 @@ def filter_graph(config, preview):
 
 def command(node, config, preview):
     graph, has_snap = filter_graph(config, preview)
-    args = ["ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error",
+    args = ["ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error", "-nostats",
+            "-stats_period", "1", "-progress", "pipe:1",
             "-f", "v4l2", "-input_format", "mjpeg", "-video_size", config["capture"],
             "-framerate", str(config["fps"]), "-i", node, "-filter_complex", graph,
             "-map", "[out]", "-f", "v4l2", str(LOOPBACK)]
     if has_snap:
         args += ["-map", "[snap]", "-f", "image2", "-update", "1", "-q:v", "5", str(PREVIEW)]
     return args
+
+
+class FrameProgress:
+    """Track frames submitted to the first output (the virtual camera), using monotonic time."""
+
+    def __init__(self, clock=time.monotonic):
+        self.clock = clock
+        self.lock = threading.Lock()
+        self.frames = 0
+        self.last_advance = clock()
+
+    def read(self, stream):
+        for line in stream:
+            key, _, value = line.strip().partition("=")
+            value = value.strip()
+            if key != "frame" or not value.isascii() or not value.isdecimal():
+                continue
+            frames = int(value)
+            with self.lock:
+                if frames > self.frames:
+                    self.frames = frames
+                    self.last_advance = self.clock()
+
+    def status(self):
+        with self.lock:
+            frames = self.frames
+            age = self.clock() - self.last_advance
+        deadline = FRAME_TIMEOUT if frames else STARTUP_TIMEOUT
+        return frames, max(0, age), age >= deadline
+
+
+def read_errors(stream, tail):
+    # Read while the camera runs so a noisy MJPEG source cannot fill FFmpeg's pipe.
+    for line in stream:
+        message = line.strip()
+        if message and "Last message repeated" not in message:
+            tail.append(message[-500:])
 
 
 def write_status(**fields):
@@ -195,33 +238,58 @@ def run():
             f"{config['output']}, low light {'on' if config['low_light'] else 'off'}"
             + (", preview on" if preview else ""))
         process = subprocess.Popen(command(node, config, preview), stdin=subprocess.DEVNULL,
-                                   stderr=subprocess.PIPE, text=True)
+                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                                   encoding="utf-8", errors="replace")
+        progress = FrameProgress()
+        errors = deque(maxlen=10)
+        readers = [threading.Thread(target=progress.read, args=(process.stdout,), daemon=True),
+                   threading.Thread(target=read_errors, args=(process.stderr, errors), daemon=True)]
+        for reader in readers:
+            reader.start()
         started = time.time()
-        write_status(state="running", device=node, zone=config["zone"], output=config["output"],
-                     low_light=config["low_light"], preview=preview, started=started)
+        fields = dict(device=node, zone=config["zone"], output=config["output"],
+                      low_light=config["low_light"], preview=preview, started=started)
+        write_status(state="starting", message="Waiting for the first camera frame.", frames=0, **fields)
+        last_status = None
         reason = ""
+        stalled = False
         while process.poll() is None and not stop["now"]:
             time.sleep(1)
             if config_stamp() != stamp:
                 reason = "settings changed"
             elif preview_wanted() != preview:
                 reason = "preview " + ("started" if not preview else "ended")
+            else:
+                frames, age, stalled = progress.status()
+                if stalled:
+                    reason = f"No new camera frames for {int(age)} seconds. Restarting the frame stage."
+                    write_status(state="error", message=reason, frames=frames, **fields)
+                elif frames and (last_status is None or time.monotonic() - last_status >= STATUS_INTERVAL):
+                    write_status(state="running", frames=frames, frame_age_seconds=round(age, 1), **fields)
+                    last_status = time.monotonic()
             if reason:
-                process.terminate()
                 break
+        if process.poll() is None:
+            process.terminate()
         try:
-            _, err = process.communicate(timeout=10)
+            process.wait(timeout=5)
         except subprocess.TimeoutExpired:
             process.kill()
-            _, err = process.communicate()
+            process.wait()
+        for reader in readers:
+            reader.join()
+        process.stdout.close()
+        process.stderr.close()
         if not preview_wanted():
             PREVIEW.unlink(missing_ok=True)
         if stop["now"]:
             break
         if reason:
             log(f"frame stage: restarting ({reason})")
+            if stalled:
+                time.sleep(5)
             continue
-        lines = [l for l in (err or "").strip().splitlines() if "Last message repeated" not in l] or ["ffmpeg stopped"]
+        lines = list(errors) or ["ffmpeg stopped"]
         log(f"frame stage: ffmpeg exited with {process.returncode}:")
         for line in lines[-6:]:
             log(f"  {line}")
