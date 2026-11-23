@@ -68,6 +68,7 @@ for h in "${HELPERS[@]}"; do [ -f "$SHARE/$h" ] && cp -p "$SHARE/$h" "$ROLLBACK/
 [ -d "$SHARE/pages" ] && cp -rp "$SHARE/pages" "$ROLLBACK/pages"
 [ -f /usr/local/bin/catcam-guard ] && cp -p /usr/local/bin/catcam-guard "$ROLLBACK/catcam-guard"
 [ -f "$RELEASE/version" ] && cp -p "$RELEASE/version" "$ROLLBACK/version"
+[ -f "$RELEASE/commit" ] && cp -p "$RELEASE/commit" "$ROLLBACK/commit"
 echo "  saved in $ROLLBACK"
 
 restore() {
@@ -87,6 +88,7 @@ restore() {
   sudo systemctl restart catcam-camera.service catcam-recorder.service
   sudo systemctl restart catcam-insights.service catcam-guard.service 2>/dev/null || true
   [ -f "$ROLLBACK/version" ] && cp -p "$ROLLBACK/version" "$RELEASE/version"
+  [ -f "$ROLLBACK/commit" ] && cp -p "$ROLLBACK/commit" "$RELEASE/commit"
 }
 
 say "3/5 Installing files"
@@ -143,6 +145,7 @@ if [ "$SITE" != 1 ] || [ "$STREAM" != 1 ]; then
   die "Cat Cam $VERSION failed its checks and the previous version is back. Send Claude the lines above."
 fi
 echo "$VERSION" > "$RELEASE/version"
+git -C "$REPO" rev-parse HEAD > "$RELEASE/commit" 2>/dev/null || true
 sha "$APP" > "$RELEASE/catcam.sha"
 echo "  Site, camera and stream are up."
 cat <<EOF

@@ -19,12 +19,12 @@ and settings in `~/.config/catcam`.
 
 ## Updating mina
 
-Releases are git tags (`v2026.11.23.1`). On mina:
+The `main` branch holds the tested release; `VERSION` names it. On mina:
 
 ```
-catcam-update            # install the newest release
-catcam-update --list     # what is installed and available
-catcam-update --previous # go back one release
+catcam-update            # install the newest version
+catcam-update --check    # what is installed and available
+catcam-update --previous # go back to the version installed before
 ```
 
 `deploy/install.sh` backs up what is installed, installs, checks the site and the camera stream,
