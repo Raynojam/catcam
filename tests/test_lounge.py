@@ -173,3 +173,43 @@ def test_lounge_pages_keep_every_element_the_scripts_use():
         assert f'id="{name}"' in gate, name
     assert 'class="remember"' in gate
     assert "style=" not in page + gate  # the lounge's CSP blocks inline styles
+
+
+def make_access(tmp_path, clock):
+    import pin_access
+    config = {"version": 1, "origin": "https://lounge.example.ts.net:10000", "invite_hash": "0" * 64,
+              "generation": "1" * 32, **pin_access.pin_record("2580")}
+    path = tmp_path / "pin-access.json"
+    path.write_text(json.dumps(config))
+    return pin_access, pin_access.Access(path, tmp_path / "access.sqlite3", clock=clock)
+
+
+def test_the_pin_alone_signs_in(tmp_path):
+    pin_access, access = make_access(tmp_path, time.time)
+    for invite in (None, "", "an-old-invitation-code-0123456789"):
+        assert access.authenticated(f"{pin_access.COOKIE_NAME}={access.login(invite, '2580')}")
+
+
+def test_wrong_pins_lock_the_gate_for_longer_each_time(tmp_path):
+    now = [1_000_000.0]
+    pin_access, access = make_access(tmp_path, lambda: now[0])
+
+    def five_wrong():
+        for i in range(5):
+            with pytest.raises(pin_access.LoginError) as error:
+                access.login(None, "0000")
+        return error.value
+
+    first = five_wrong()
+    assert first.status == 429 and first.retry == 15 * 60
+    with pytest.raises(pin_access.LoginError) as error:
+        access.login(None, "2580")  # even the right PIN waits out the lock
+    assert error.value.status == 429
+    now[0] += 15 * 60 + 1
+    assert five_wrong().retry == 30 * 60
+    now[0] += 30 * 60 + 1
+    assert five_wrong().retry == 45 * 60
+    now[0] += 24 * 3600  # a day later the count starts again
+    assert five_wrong().retry == 15 * 60
+    now[0] += 15 * 60 + 1
+    assert access.login(None, "2580")

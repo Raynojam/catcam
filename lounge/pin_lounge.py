@@ -77,9 +77,9 @@ class PINHandler(Handler):
                 self.server.access.logout(self.headers.get("Cookie"))
                 self.session_cookie = self.server.access.clear_cookie()
                 return self.json_reply(200, {"ok":True})
-            if set(body) != {"invite", "pin"}:
+            if not {"pin"} <= set(body) <= {"invite", "pin"}:
                 return self.json_reply(400, {"error":"Invalid request"})
-            token = self.server.access.login(body["invite"], body["pin"])
+            token = self.server.access.login(body.get("invite"), body["pin"])
             self.session_cookie = self.server.access.cookie(token)
             self.json_reply(200, {"ok":True})
         except LoginError as error:

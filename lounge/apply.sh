@@ -9,7 +9,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 CONFIG="$HOME/.config/catcam-lounge"
 APP="$HOME/catcam-lounge"
 SOURCE="$APP/pin-source"
-CHANGED=(lounge.py pin_lounge.py lounge.js pin_setup.py lounge.html lounge.css gate.html gate.css favicon.svg storage.html)
+CHANGED=(lounge.py pin_lounge.py pin_access.py gate.js lounge.js pin_setup.py lounge.html lounge.css gate.html gate.css favicon.svg storage.html)
 
 [ "$(id -un)" = faure ] || { echo "Run as faure: bash ~/catcam-repo/lounge/apply.sh"; exit 1; }
 CURRENT="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["release"])' "$CONFIG/pin-installed.json")"
@@ -22,7 +22,7 @@ find "$CURRENT" -maxdepth 1 -type f -exec cp -p {} "$SOURCE"/ \;
 for name in "${CHANGED[@]}"; do install -m 600 "$HERE/$name" "$SOURCE/$name"; done
 python3 -m py_compile "$SOURCE"/*.py
 
-echo "Installing the live-stream lounge (asks for your mina password once, for sudo)..."
+echo "Installing the lounge update (asks for your mina password once, for sudo)..."
 python3 "$SOURCE/pin_setup.py" --install
 
 # Only after the new release passed its checks: raise the lounge rate from 2 to 10 fps,

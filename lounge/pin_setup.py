@@ -178,9 +178,9 @@ def verify():
         raise RuntimeError("PIN landing page check failed")
     for path in ("/frame.jpg", "/status.json", "/lounge.js", STREAM):
         if request(path)[0] != 401: raise RuntimeError("Unauthenticated media was not blocked")
-    for origin in (config["origin"], "https://untrusted.invalid"):
-        if request("/api/login", payload={"invite":"x"*32, "pin":"0000"}, origin=origin)[0] != 403:
-            raise RuntimeError("Invitation/origin check failed")
+    # Only the foreign-origin check: a same-origin wrong PIN would use up a real attempt.
+    if request("/api/login", payload={"pin":"0000"}, origin="https://untrusted.invalid")[0] != 403:
+        raise RuntimeError("Origin check failed")
     # This temporary installation-only session checks route isolation without storing the PIN.
     token = secrets.token_urlsafe(32)
     access = Access(AUTH, STATE/"access.sqlite3")
@@ -202,7 +202,7 @@ def verify():
         if request("/status.json", cookie=cookie)[0] != 401: raise RuntimeError("Revoked session was accepted")
     finally:
         access.logout(cookie)
-    print("Passed: PIN page, required invitation/session, protected images, blocked archive/management, and sign-out.")
+    print("Passed: PIN page, required session, protected images, blocked archive/management, and sign-out.")
 
 
 def make_auth(origin, preset):
@@ -381,9 +381,11 @@ def install():
 
 
 def share_link():
-    print("\nPRIVATE INVITATION — share this complete link with your mom and friend:")
-    print(current_link())
-    print("They open the link and enter the PIN. No username or Tailscale app is needed after Funnel is enabled.")
+    origin = read_auth(AUTH)["origin"]
+    print("\nThe lounge address — share it, then tell people the PIN separately:")
+    print(origin + "/")
+    print("Anyone with the address and the PIN can watch. Change the PIN with --set-pin;")
+    print("--sign-out-everyone ends every signed-in browser without changing the PIN.")
 
 
 def publish():
@@ -417,7 +419,7 @@ def update_recorder():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    for flag in ("install", "publish", "private", "link", "health", "rotate-invite", "set-pin", "upgrade-recorder", "client-info"):
+    for flag in ("install", "publish", "private", "link", "health", "rotate-invite", "sign-out-everyone", "set-pin", "upgrade-recorder", "client-info"):
         parser.add_argument("--"+flag, action="store_true")
     args = parser.parse_args()
     if not any(vars(args).values()): parser.error("Choose an action")
@@ -430,7 +432,7 @@ def main():
         print(json.dumps({"url": current_link(conf), "original_pin": all(conf.get(k)==v for k,v in preset.items())}))
         return
     if args.install: install()
-    if args.rotate_invite or args.set_pin:
+    if args.rotate_invite or args.sign_out_everyone or args.set_pin:
         config = read_auth(AUTH)
         if args.set_pin:
             value = getpass.getpass("New four-digit PIN: ")
@@ -439,10 +441,10 @@ def main():
         token = secrets.token_urlsafe(24)
         config.update(invite_hash=digest(token), generation=secrets.token_hex(16))
         save_access_pair(config, config["origin"]+"/#invite="+token)
-        print("Invitation replaced. Previous links and sessions are revoked.")
+        print("Everyone who was signed in has been signed out." + (" The new PIN is set." if args.set_pin else ""))
     if args.install:
         print("PIN access is ready on your tailnet. Your old lounge password is retired.")
-        print("Your invitation:", current_link(), flush=True)
+        print("Lounge address:", read_auth(AUTH)["origin"] + "/", flush=True)
     recorder_error = None
     if args.upgrade_recorder:
         try:
@@ -462,7 +464,7 @@ def main():
         inspect_route(origin)
         use_private_route(origin)
     if args.publish: publish()
-    if args.install or args.link or args.publish or args.rotate_invite or args.set_pin: share_link()
+    if args.install or args.link or args.publish or args.rotate_invite or args.sign_out_everyone or args.set_pin: share_link()
     if recorder_error:
         raise RuntimeError("The lounge upgrade succeeded. The private recorder check reported an issue above.")
 
