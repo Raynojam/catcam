@@ -3,12 +3,24 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: sudo apt-get update -q && sudo apt-get install -y --no-install-recommends ffmpeg
+      - name: Ensure FFmpeg is available
+        timeout-minutes: 5
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            # The runner's regional mirror can stall on individual packages.
+            if [ -f /etc/apt/apt-mirrors.txt ]; then
+              printf '%s\n' 'https://archive.ubuntu.com/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null
+            fi
+            sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 update -q
+            sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 install -y --no-install-recommends ffmpeg
+          fi
+          ffmpeg -version
       - run: pip install pytest shellcheck-py
       - run: python -m pytest -q tests
       - run: shellcheck -S warning deploy/install.sh deploy/catcam-update deploy/catcam-insights lounge/apply.sh

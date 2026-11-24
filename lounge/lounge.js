@@ -11,70 +11,176 @@ let pollTimer;
 let requestInFlight;
 let imageUrl;
 let liveMode = typeof ReadableStream === 'function';
+const stage = byId('stage');
 const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
-const viewButtons = {auto: byId('viewAuto'), wide: byId('viewWide'), upper: byId('viewUpper'), lower: byId('viewLower')};
-const shotNames = {wide: 'Wide view', upper: 'Upper bed', lower: 'Lower perch'};
-const tour = [{shot: 'wide', seconds: 22}, {shot: 'upper', seconds: 24},
-              {shot: 'wide', seconds: 18}, {shot: 'lower', seconds: 24}];
-let viewMode = 'wide';
+const tour = [
+  {zoom: 1, x: .5, y: .5, seconds: 20},
+  {zoom: 1.45, x: .12, y: .18, seconds: 24},
+  {zoom: 1, x: .5, y: .5, seconds: 18},
+  {zoom: 1.45, x: .48, y: 1, seconds: 24},
+];
+let framing = {zoom: 1, x: .5, y: .5};
+let tourEnabled = false;
 let tourTimer;
-let shotIndex = 0;
+let tourStep = 0;
 let directorLive = false;
+let drag;
+const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
-function setShot(shot, animate = true) {
-  byId('stage').dataset.motion = animate && !motionPreference.matches ? 'gentle' : 'still';
-  byId('stage').dataset.shot = shot;
-  byId('shotLabel').textContent = shotNames[shot];
+function rememberFraming() {
+  storeValue('localStorage', 'catLoungeFraming', JSON.stringify({...framing, tour: tourEnabled}));
+}
+function paintFraming(motion = 'quick') {
+  stage.dataset.motion = motionPreference.matches ? 'still' : motion;
+  stage.dataset.zoomed = String(framing.zoom > 1);
+  picture.style.transform = `scale(${framing.zoom})`;
+  picture.style.transformOrigin = `${framing.x * 100}% ${framing.y * 100}%`;
+  byId('zoomLevel').textContent = `${Number(framing.zoom.toFixed(2))}\u00d7`;
+  byId('zoomOut').disabled = !directorLive || closing || framing.zoom <= 1;
+  byId('zoomIn').disabled = !directorLive || closing || framing.zoom >= 2;
+  byId('resetView').disabled = !directorLive || closing || (!tourEnabled && framing.zoom === 1);
+  byId('tourToggle').disabled = !directorLive || closing;
+  byId('tourToggle').setAttribute('aria-pressed', String(tourEnabled));
+  byId('tourToggle').textContent = tourEnabled ? 'Stop tour' : 'Slow tour';
+  byId('viewHelp').textContent = tourEnabled
+    ? 'A gentle tour. Touch the picture or use zoom to take over.'
+    : framing.zoom > 1 ? 'Drag to look around. Full picture resets your view.'
+      : 'Tap the picture to look closer, or use the zoom buttons.';
+  byId('viewMode').textContent = tourEnabled ? 'Tour' : framing.zoom > 1 ? 'Close-up' : 'Full picture';
+  byId('viewMode').hidden = !directorLive;
+}
+function setFraming(zoom, x = framing.x, y = framing.y, motion = 'quick') {
+  framing = {zoom: clamp(zoom, 1, 2), x: clamp(x, 0, 1), y: clamp(y, 0, 1)};
+  if (framing.zoom === 1) framing.x = framing.y = .5;
+  paintFraming(motion);
+}
+function stopTour() {
+  if (tourEnabled && directorLive && window.getComputedStyle) {
+    // A viewer may take over halfway through the CSS transition. Continue
+    // from the visible frame, rather than jumping to the tour's destination.
+    const style = window.getComputedStyle(picture);
+    const matrix = /^matrix\(([^,]+)/.exec(style.transform);
+    const origin = style.transformOrigin.split(' ').map(parseFloat);
+    if (matrix && picture.clientWidth && picture.clientHeight) {
+      framing = {zoom: clamp(Number(matrix[1]), 1, 2),
+        x: clamp(origin[0] / picture.clientWidth, 0, 1),
+        y: clamp(origin[1] / picture.clientHeight, 0, 1)};
+    }
+  }
+  tourEnabled = false;
+  clearTimeout(tourTimer);
+}
+function changeZoom(amount) {
+  if (!directorLive || closing) return;
+  stopTour();
+  setFraming(Math.round((framing.zoom + amount) * 100) / 100);
+  rememberFraming();
+}
+function resetFraming() {
+  if (!directorLive || closing) return;
+  stopTour();
+  setFraming(1);
+  rememberFraming();
 }
 function scheduleShot() {
   clearTimeout(tourTimer);
-  if (!directorLive || viewMode !== 'auto' || document.hidden || paused || closing) return;
+  if (!directorLive || !tourEnabled || document.hidden || paused || closing) return;
   tourTimer = setTimeout(() => {
-    if (!directorLive || viewMode !== 'auto' || document.hidden || paused || closing) return;
-    shotIndex = (shotIndex + 1) % tour.length;
-    setShot(tour[shotIndex].shot);
+    if (!directorLive || !tourEnabled || document.hidden || paused || closing) return;
+    tourStep = (tourStep + 1) % tour.length;
+    const shot = tour[tourStep];
+    setFraming(shot.zoom, shot.x, shot.y, 'tour');
     scheduleShot();
-  }, tour[shotIndex].seconds * 1000);
+  }, tour[tourStep].seconds * 1000);
+}
+function toggleTour() {
+  if (!directorLive || closing) return;
+  if (tourEnabled) stopTour();
+  else { tourEnabled = true; tourStep = 0; setFraming(1); }
+  paintFraming();
+  rememberFraming();
+  scheduleShot();
+}
+function cancelDrag() {
+  if (drag && stage.hasPointerCapture?.(drag.id)) stage.releasePointerCapture(drag.id);
+  drag = null;
+  stage.dataset.dragging = 'false';
 }
 function directorState(live) {
   if (live === directorLive) return;
   directorLive = live;
   clearTimeout(tourTimer);
-  byId('shotLabel').hidden = !live;
-  for (const button of Object.values(viewButtons)) button.disabled = !live || closing;
-  if (!live) {
-    // Stop a CSS transition as well as the tour timer when the stream is hidden.
-    setShot('wide', false);
-    return;
+  cancelDrag();
+  paintFraming('still');
+  if (live) scheduleShot();
+}
+function focusPoint(clientX, clientY) {
+  stopTour();
+  const rect = stage.getBoundingClientRect();
+  if (!rect.width || !rect.height) return;
+  // Convert the tapped point back into source coordinates before reframing.
+  const sx = ((clientX - rect.left) / rect.width + (framing.zoom - 1) * framing.x) / framing.zoom;
+  const sy = ((clientY - rect.top) / rect.height + (framing.zoom - 1) * framing.y) / framing.zoom;
+  const zoom = Math.max(1.75, framing.zoom);
+  setFraming(zoom, (zoom * sx - .5) / (zoom - 1), (zoom * sy - .5) / (zoom - 1));
+  rememberFraming();
+}
+stage.addEventListener('pointerdown', event => {
+  if (!directorLive || closing || event.isPrimary === false || event.button !== 0) return;
+  if (tourEnabled) { stopTour(); paintFraming('still'); rememberFraming(); }
+  const rect = stage.getBoundingClientRect();
+  drag = {id: event.pointerId, x: event.clientX, y: event.clientY,
+    originX: framing.x, originY: framing.y, width: rect.width, height: rect.height, moved: false};
+  stage.setPointerCapture(event.pointerId);
+});
+stage.addEventListener('pointermove', event => {
+  if (!drag || event.pointerId !== drag.id || !directorLive || closing) return;
+  const dx = event.clientX - drag.x, dy = event.clientY - drag.y;
+  if (Math.hypot(dx, dy) > 6) drag.moved = true;
+  if (!drag.moved || framing.zoom === 1 || !drag.width || !drag.height) return;
+  stopTour();
+  stage.dataset.dragging = 'true';
+  setFraming(framing.zoom, drag.originX - dx / (drag.width * (framing.zoom - 1)),
+    drag.originY - dy / (drag.height * (framing.zoom - 1)), 'still');
+});
+stage.addEventListener('pointerup', event => {
+  if (!drag || event.pointerId !== drag.id) return;
+  const tapped = !drag.moved;
+  cancelDrag();
+  if (!directorLive || closing) return;
+  if (tapped) focusPoint(event.clientX, event.clientY);
+  else rememberFraming();
+});
+stage.addEventListener('pointercancel', cancelDrag);
+stage.addEventListener('lostpointercapture', cancelDrag);
+stage.addEventListener('keydown', event => {
+  if (!directorLive || closing || event.altKey || event.ctrlKey || event.metaKey) return;
+  const moves = {ArrowLeft: [-.1, 0], ArrowRight: [.1, 0], ArrowUp: [0, -.1], ArrowDown: [0, .1]};
+  if (event.key === '+' || event.key === '=') changeZoom(.25);
+  else if (event.key === '-') changeZoom(-.25);
+  else if (event.key === '0' || event.key === 'Escape') resetFraming();
+  else if (moves[event.key] && framing.zoom > 1) {
+    stopTour();
+    setFraming(framing.zoom, framing.x + moves[event.key][0], framing.y + moves[event.key][1]);
+    rememberFraming();
+  } else return;
+  event.preventDefault();
+});
+byId('zoomOut').addEventListener('click', () => changeZoom(-.25));
+byId('zoomIn').addEventListener('click', () => changeZoom(.25));
+byId('resetView').addEventListener('click', resetFraming);
+byId('tourToggle').addEventListener('click', toggleTour);
+try {
+  const saved = JSON.parse(storageValue('localStorage', 'catLoungeFraming'));
+  if (saved && ['zoom', 'x', 'y'].every(key => typeof saved[key] === 'number' && Number.isFinite(saved[key]))) {
+    setFraming(saved.zoom, saved.x, saved.y, 'still');
+    tourEnabled = saved.tour === true && !motionPreference.matches;
   }
-  shotIndex = 0;
-  setShot(viewMode === 'auto' ? 'wide' : viewMode, false);
-  scheduleShot();
-}
-function chooseView(mode, remember = true) {
-  if (!Object.keys(viewButtons).includes(mode) || closing) return;
-  viewMode = mode;
-  clearTimeout(tourTimer);
-  shotIndex = 0;
-  for (const [name, button] of Object.entries(viewButtons)) {
-    button.setAttribute('aria-pressed', String(name === mode));
-  }
-  byId('viewHelp').textContent = mode === 'auto'
-    ? 'A slow tour of the beds. Choose a view to hold it.'
-    : (mode === 'wide' ? 'The whole family view. Select Auto for a slow tour.'
-      : 'Holding this view. Select Auto to continue the tour.');
-  setShot(mode === 'auto' ? 'wide' : mode, directorLive);
-  if (remember) storeValue('localStorage', 'catLoungeView', mode);
-  scheduleShot();
-}
-for (const [mode, button] of Object.entries(viewButtons)) {
-  button.disabled = true;
-  button.addEventListener('click', () => chooseView(mode));
-}
-const savedView = storageValue('localStorage', 'catLoungeView');
-chooseView(motionPreference.matches ? 'wide' : (Object.keys(viewButtons).includes(savedView) ? savedView : 'auto'), false);
+} catch { /* Start with the full picture when no usable preference is saved. */ }
+if (motionPreference.matches) { stopTour(); setFraming(1, .5, .5, 'still'); }
+paintFraming('still');
 motionPreference.addEventListener('change', event => {
-  if (event.matches) chooseView('wide', false);
+  if (event.matches) { stopTour(); setFraming(1, .5, .5, 'still'); }
 });
 
 function storageValue(type, key) {
@@ -130,7 +236,10 @@ async function showFrame(blob, current) {
     picture.src = candidate;
     imageUrl = candidate;
     const ratio = image.naturalWidth && `${image.naturalWidth} / ${image.naturalHeight}`;
-    if (ratio && byId('stage').style.aspectRatio !== ratio) byId('stage').style.aspectRatio = ratio;
+    if (ratio && stage.style.aspectRatio !== ratio) {
+      stage.style.aspectRatio = ratio;
+      stage.style.setProperty('--frame-ratio', String(image.naturalWidth / image.naturalHeight));
+    }
     if (prior) URL.revokeObjectURL(prior);
     picture.hidden = false;
     directorState(true);
