@@ -67,6 +67,19 @@ test('tap focuses the chosen area and dragging cannot leave the shared picture',
   assert.equal(page.element('stage').dataset.dragging, 'false');
 });
 
+test('taking over mid-tour uses the visible intermediate zoom', async () => {
+  const page = openPage();
+  await page.frame();
+  page.click('tourToggle');
+  page.advanceShot();
+  page.element('picture').clientWidth = 400;
+  page.element('picture').clientHeight = 400;
+  page.window.getComputedStyle = () => ({transform: 'matrix(1.1, 0, 0, 1.1, 0, 0)', transformOrigin: '120px 160px'});
+  page.click('zoomIn');
+  assert.equal(page.element('picture').style.transform, 'scale(1.35)');
+  assert.equal(page.element('picture').style.transformOrigin, '30% 40%');
+});
+
 test('keyboard controls and stored view restore without starting a tour', async () => {
   const page = openPage({saved: {zoom: 1.5, x: .2, y: .3, tour: false}});
   await page.frame();

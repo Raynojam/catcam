@@ -55,6 +55,18 @@ function setFraming(zoom, x = framing.x, y = framing.y, motion = 'quick') {
   paintFraming(motion);
 }
 function stopTour() {
+  if (tourEnabled && directorLive && window.getComputedStyle) {
+    // A viewer may take over halfway through the CSS transition. Continue
+    // from the visible frame, rather than jumping to the tour's destination.
+    const style = window.getComputedStyle(picture);
+    const matrix = /^matrix\(([^,]+)/.exec(style.transform);
+    const origin = style.transformOrigin.split(' ').map(parseFloat);
+    if (matrix && picture.clientWidth && picture.clientHeight) {
+      framing = {zoom: clamp(Number(matrix[1]), 1, 2),
+        x: clamp(origin[0] / picture.clientWidth, 0, 1),
+        y: clamp(origin[1] / picture.clientHeight, 0, 1)};
+    }
+  }
   tourEnabled = false;
   clearTimeout(tourTimer);
 }
@@ -103,18 +115,19 @@ function directorState(live) {
   if (live) scheduleShot();
 }
 function focusPoint(clientX, clientY) {
+  stopTour();
   const rect = stage.getBoundingClientRect();
   if (!rect.width || !rect.height) return;
   // Convert the tapped point back into source coordinates before reframing.
   const sx = ((clientX - rect.left) / rect.width + (framing.zoom - 1) * framing.x) / framing.zoom;
   const sy = ((clientY - rect.top) / rect.height + (framing.zoom - 1) * framing.y) / framing.zoom;
   const zoom = Math.max(1.75, framing.zoom);
-  stopTour();
   setFraming(zoom, (zoom * sx - .5) / (zoom - 1), (zoom * sy - .5) / (zoom - 1));
   rememberFraming();
 }
 stage.addEventListener('pointerdown', event => {
   if (!directorLive || closing || event.isPrimary === false || event.button !== 0) return;
+  if (tourEnabled) { stopTour(); paintFraming('still'); rememberFraming(); }
   const rect = stage.getBoundingClientRect();
   drag = {id: event.pointerId, x: event.clientX, y: event.clientY,
     originX: framing.x, originY: framing.y, width: rect.width, height: rect.height, moved: false};
