@@ -19,7 +19,8 @@ from urllib.parse import urlsplit
 from urllib.request import urlopen
 
 ROOT = Path(__file__).resolve().parent
-DEFAULT_CROP = [0.225, 0.25, 0.30, 0.68]  # x,y,width,height; November 21 camera angle
+DEFAULT_CROP = [0.35, 0.38, 0.33, 0.62]  # x,y,width,height; the two beds by the window, Sony ZV-1F angle
+OLD_CROPS = ([0.225, 0.25, 0.30, 0.68],)  # AKASO-era defaults, replaced on upgrade
 DEFAULT_CONFIG = {"enabled": True, "crop": DEFAULT_CROP, "fps": 10}
 MAX_FPS = 12
 STREAM_PATH = "/perch.mjpg"
@@ -78,7 +79,7 @@ def ffmpeg_command(source, crop):
     return ["ffmpeg", "-hide_banner", "-loglevel", "error", "-nostdin", "-threads", "1",
             "-fflags", "nobuffer", "-flags", "low_delay", "-probesize", "65536", "-analyzeduration", "0",
             "-f", "mpjpeg", "-i", source.rstrip("/") + "/stream",
-            "-an", "-vf", filt, "-q:v", "6", "-flush_packets", "1", "-f", "mpjpeg", "-boundary_tag", "lounge", "pipe:1"]
+            "-an", "-vf", filt, "-q:v", "4", "-flush_packets", "1", "-f", "mpjpeg", "-boundary_tag", "lounge", "pipe:1"]
 
 
 def read_parts(stream):

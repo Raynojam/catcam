@@ -1,0 +1,86 @@
+/* Catppuccin Mocha, matching the lounge. The PIN card wears the same cat ears as the camera frame. */
+:root {
+  color-scheme: dark;
+  --crust: #11111b; --mantle: #181825; --base: #1e1e2e;
+  --surface0: #313244; --surface1: #45475a; --surface2: #585b70; --overlay1: #7f849c;
+  --subtext0: #a6adc8; --subtext1: #bac2de; --text: #cdd6f4;
+  --rosewater: #f5e0dc; --mauve: #cba6f7; --red: #f38ba8; --lavender: #b4befe;
+  --round: ui-rounded, "SF Pro Rounded", "Nunito", "Quicksand", "Varela Round", system-ui, sans-serif;
+  font: 16px/1.55 system-ui, sans-serif;
+  background: var(--base);
+  color: var(--text);
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; min-height: 100vh; min-height: 100svh; }
+.masthead, main { width: min(1040px, calc(100% - 48px)); margin-inline: auto; }
+.masthead { display: flex; align-items: center; min-height: 64px; }
+.brand { display: inline-flex; align-items: center; gap: 10px; color: var(--subtext1); font: 700 1rem/1 var(--round); text-decoration: none; }
+main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 390px);
+  align-items: center;
+  gap: clamp(30px, 7vw, 96px);
+  min-height: calc(100svh - 64px);
+  padding-block: 40px max(40px, 8vh);
+}
+.welcome, .card { min-width: 0; }
+h1 { margin: 0; max-width: 15ch; font: 700 clamp(2.4rem, 5vw, 4rem)/1.06 var(--round); letter-spacing: -.02em; color: var(--rosewater); }
+.welcome p { margin: 18px 0 0; max-width: 40ch; color: var(--subtext0); font-size: 1.04rem; }
+.line-art { width: min(100%, 300px); margin-top: 26px; }
+.line-art svg { width: 100%; display: block; }
+.line-art .frame { stroke: var(--surface2); }
+.line-art .cat { stroke: var(--mauve); }
+
+.card {
+  position: relative;
+  width: 100%;
+  margin-top: 22px;
+  padding: clamp(26px, 4vw, 38px);
+  border-radius: 28px;
+  background: var(--mantle);
+  border: 1px solid var(--surface0);
+}
+.card::before, .card::after {
+  content: ""; position: absolute; top: -22px; width: 48px; height: 27px;
+  background: var(--mauve); clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+.card::before { left: 34px; }
+.card::after { right: 34px; }
+h2 { margin: 0; font: 700 clamp(1.7rem, 3.4vw, 2.1rem)/1.15 var(--round); color: var(--text); }
+#intro { margin: 10px 0 24px; color: var(--subtext0); }
+label { display: block; font-size: .86rem; font-weight: 600; margin-bottom: 9px; color: var(--subtext1); }
+.pin-wrap { display: flex; border: 1px solid var(--surface1); border-radius: 14px; background: var(--crust); overflow: hidden; }
+.pin-wrap:focus-within { outline: 2px solid var(--mauve); outline-offset: 3px; }
+input {
+  width: 0; min-width: 0; flex: 1;
+  border: 0; outline: 0;
+  padding: 13px 8px 13px 18px;
+  color: var(--text); background: transparent;
+  font: 600 1.9rem/1.25 ui-monospace, monospace;
+  letter-spacing: .34em;
+}
+input::placeholder { color: var(--surface2); opacity: 1; }
+button { font: inherit; cursor: pointer; }
+.pin-wrap button { min-height: 48px; min-width: 64px; border: 0; background: transparent; padding: 0 14px; color: var(--subtext1); font-weight: 600; }
+.pin-wrap button:hover { color: var(--text); }
+.primary {
+  display: block; width: 100%; min-height: 50px; padding: 12px 16px;
+  border: 0; border-radius: 14px; color: var(--crust); background: var(--mauve);
+  font-weight: 700;
+}
+.primary:hover { background: var(--lavender); }
+button:disabled { opacity: .55; cursor: default; }
+#message { min-height: 1.5em; margin: 9px 0; color: var(--red); font-size: .88rem; }
+.remember { margin: 16px 0 0; color: var(--overlay1); font-size: .82rem; }
+#missing > button { margin-top: 20px; }
+button:focus-visible, a:focus-visible, h2:focus-visible { outline: 2px solid var(--lavender); outline-offset: 4px; }
+@media (max-width: 760px) {
+  .masthead, main { width: min(450px, calc(100% - 36px)); }
+  .masthead { min-height: 56px; }
+  main { display: block; min-height: 0; padding: 22px 0 32px; }
+  h1 { font-size: clamp(2rem, 8.5vw, 2.8rem); }
+  .welcome p { margin-top: 10px; font-size: .95rem; }
+  .line-art { display: none; }
+  .card { margin-top: 44px; padding: 24px; }
+}

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1e1e2e">
+  <meta name="color-scheme" content="dark">
+  <meta name="robots" content="noindex,nofollow">
+  <title>The Cat Lounge</title>
+  <link rel="icon" href="/favicon.svg">
+  <link rel="stylesheet" href="/lounge.css">
+  <script defer src="/lounge.js"></script>
+</head>
+<body><div class="shell">
+  <header>
+    <a class="brand" href="/"><img src="/favicon.svg" width="26" height="26" alt="">The Cat Lounge</a>
+  </header>
+  <main>
+    <section class="viewer" aria-labelledby="perch">
+      <h1 id="perch" class="visually-hidden">Live view of the cat beds</h1>
+      <div class="window">
+        <div class="stage" id="stage">
+          <img id="picture" alt="Live view of the cat beds by the window" hidden>
+          <div id="curtain" class="curtain">
+            <img src="/favicon.svg" alt="" width="44" height="44">
+            <h2 id="curtainTitle">Opening the camera</h2>
+            <p id="curtainHelp">Waiting for a fresh picture from Mina.</p>
+          </div>
+          <span id="badge" class="badge"><i aria-hidden="true"></i><span id="status" role="status">Connecting</span></span>
+        </div>
+      </div>
+      <div class="controls">
+        <button id="pause" type="button" aria-pressed="false">Pause my view</button>
+        <button id="focus" type="button">Full screen</button>
+        <button id="signOut" type="button">Sign out</button>
+      </div>
+    </section>
+    <aside aria-labelledby="who">
+      <h2 id="who">Faff, Siya and Thuli</h2>
+      <p class="lede">Live from the beds by the window at Faure’s. Pictures only, no sound.</p>
+      <ul class="cats" aria-label="The cats">
+        <li><b class="faff" aria-hidden="true"></b><span><strong>Faff</strong> grey tabby</span></li>
+        <li><b class="siya" aria-hidden="true"></b><span><strong>Siya</strong> grey, and the biggest</span></li>
+        <li><b class="thuli" aria-hidden="true"></b><span><strong>Thuli</strong> black and white</span></li>
+      </ul>
+      <p class="seen">Last picture <span id="lastFrame">waiting for the camera</span></p>
+      <p class="private-note">Please keep your invitation to yourself.</p>
+    </aside>
+  </main>
+</div></body>
+</html>

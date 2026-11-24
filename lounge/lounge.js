@@ -63,6 +63,8 @@ async function showFrame(blob, current) {
     const prior = imageUrl;
     picture.src = candidate;
     imageUrl = candidate;
+    const ratio = image.naturalWidth && `${image.naturalWidth} / ${image.naturalHeight}`;
+    if (ratio && byId('stage').style.aspectRatio !== ratio) byId('stage').style.aspectRatio = ratio;
     if (prior) URL.revokeObjectURL(prior);
     picture.hidden = false;
     byId('curtain').hidden = true;
@@ -244,7 +246,7 @@ byId('pause').addEventListener('click', () => {
   stopPolling();
   byId('pause').textContent = paused ? 'Resume my view' : 'Pause my view';
   byId('pause').setAttribute('aria-pressed', String(paused));
-  if (paused) curtain('View paused', 'Tap Resume my view to return to the perch.', 'Paused');
+  if (paused) curtain('View paused', 'Tap Resume my view to look again.', 'Paused');
   else watch();
 });
 byId('focus').addEventListener('click', async () => {

@@ -155,3 +155,21 @@ def test_camera_loss_ends_the_stream(lounge_server):
     with pytest.raises(HTTPError) as error:
         urlopen(url + lounge.STREAM_PATH, timeout=15)
     assert error.value.code == 503
+
+
+def test_upgrade_moves_the_akaso_crop_to_the_sony_beds():
+    assert lounge.DEFAULT_CROP == [0.35, 0.38, 0.33, 0.62]
+    assert [0.225, 0.25, 0.3, 0.68] in [list(c) for c in lounge.OLD_CROPS]
+
+
+def test_lounge_pages_keep_every_element_the_scripts_use():
+    folder = Path(lounge.__file__).parent
+    page = (folder / "lounge.html").read_text()
+    for name in ("badge", "status", "stage", "picture", "curtain", "curtainTitle", "curtainHelp",
+                 "pause", "focus", "signOut", "lastFrame"):
+        assert f'id="{name}"' in page, name
+    gate = (folder / "gate.html").read_text()
+    for name in ("gateTitle", "intro", "login", "pin", "showPin", "message", "enter", "missing", "useSaved"):
+        assert f'id="{name}"' in gate, name
+    assert 'class="remember"' in gate
+    assert "style=" not in page + gate  # the lounge's CSP blocks inline styles

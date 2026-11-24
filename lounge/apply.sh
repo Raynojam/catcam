@@ -9,7 +9,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 CONFIG="$HOME/.config/catcam-lounge"
 APP="$HOME/catcam-lounge"
 SOURCE="$APP/pin-source"
-CHANGED=(lounge.py pin_lounge.py lounge.js pin_setup.py)
+CHANGED=(lounge.py pin_lounge.py lounge.js pin_setup.py lounge.html lounge.css gate.html gate.css favicon.svg storage.html)
 
 [ "$(id -un)" = faure ] || { echo "Run as faure: bash ~/catcam-repo/lounge/apply.sh"; exit 1; }
 CURRENT="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["release"])' "$CONFIG/pin-installed.json")"
@@ -25,14 +25,24 @@ python3 -m py_compile "$SOURCE"/*.py
 echo "Installing the live-stream lounge (asks for your mina password once, for sudo)..."
 python3 "$SOURCE/pin_setup.py" --install
 
-# Only after the new release passed its checks: raise the lounge rate from 2 to 10 fps.
+# Only after the new release passed its checks: raise the lounge rate from 2 to 10 fps,
+# and move an AKASO-era crop onto the beds as the Sony sees them.
 # (The old release refuses rates above 2, so this must not happen before the install.)
-python3 - "$CONFIG/settings.json" <<'PY'
+python3 - "$CONFIG/settings.json" "$SOURCE" <<'PY'
 import json, os, sys
 path = sys.argv[1]
+sys.path.insert(0, sys.argv[2])
+from lounge import DEFAULT_CROP, OLD_CROPS
 data = json.load(open(path))
+changed = False
 if data.get("fps", 2) <= 2:
     data["fps"] = 10
+    changed = True
+if data.get("crop") in [list(c) for c in OLD_CROPS]:
+    data["crop"] = list(DEFAULT_CROP)
+    changed = True
+    print("Lounge view moved to the cat beds for the Sony camera.")
+if changed:
     temp = path + ".new"
     with open(temp, "w") as f:
         os.chmod(temp, 0o600)

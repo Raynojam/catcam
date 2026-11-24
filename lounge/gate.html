@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#1e1e2e">
+  <meta name="color-scheme" content="dark">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Invitation &middot; The Cat Lounge</title>
+  <link rel="icon" href="/favicon.svg">
+  <link rel="stylesheet" href="/gate.css">
+  <script defer src="/gate.js"></script>
+</head>
+<body>
+  <header class="masthead">
+    <a class="brand" href="/"><img src="/favicon.svg" width="26" height="26" alt="">The Cat Lounge</a>
+  </header>
+  <main>
+    <section class="welcome">
+      <h1>Faff, Siya and Thuli are on the windowsill.</h1>
+      <p>A live view of the cat beds at Faure&rsquo;s, for family and friends.</p>
+      <div class="line-art" aria-hidden="true">
+        <svg viewBox="0 0 360 170" fill="none" focusable="false">
+          <path class="frame" d="M29 137h300M72 137V25h218v112M181 25v112M72 79h218" stroke-width="1.6"/>
+          <path class="cat" d="M126 137c-14-22-4-47 14-57l-1-26 19 16 22-1 19-15-2 29c18 17 18 34 10 54M158 96h1m24 0h1m-16 9 4 3 4-3M198 133c47 4 66-13 64-32-2-19-18-14-15-1 4 16-17 18-36 15" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="gateTitle">
+      <h2 id="gateTitle" tabindex="-1">Enter your PIN</h2>
+      <p id="intro">Use the four digits Faure shared with you.</p>
+      <form id="login" method="post" action="/api/login" novalidate hidden>
+        <label for="pin">Lounge PIN</label>
+        <div class="pin-wrap">
+          <input id="pin" type="password" inputmode="numeric" pattern="[0-9]{4}"
+                 minlength="4" maxlength="4" autocomplete="off" placeholder="&bull;&bull;&bull;&bull;"
+                 required aria-describedby="message">
+          <button id="showPin" type="button" aria-controls="pin" aria-label="Show PIN">Show</button>
+        </div>
+        <p id="message" role="status" aria-live="polite" aria-atomic="true"></p>
+        <button id="enter" class="primary" type="submit">Open the lounge</button>
+      </form>
+      <p class="remember" hidden>This browser stays signed in for up to 30 days. Sign out on a shared device.</p>
+      <div id="missing" hidden>
+        <button id="useSaved" type="button" class="primary" hidden>Use this device&rsquo;s saved invitation</button>
+      </div>
+      <noscript><p>Turn on JavaScript in this browser to open the lounge.</p></noscript>
+    </section>
+  </main>
+</body>
+</html>

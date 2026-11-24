@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en"><head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark"><meta name="robots" content="noindex,nofollow">
+  <title>Storage · Mina Cat Cam</title>
+  <style>
+    :root {font:16px/1.5 system-ui,sans-serif;background:#1e1e2e;color:#cdd6f4;color-scheme:dark;--muted:#a6adc8;--line:#45475a;--accent:#cba6f7}
+    * {box-sizing:border-box} body {max-width:1030px;margin:auto;padding:0 clamp(16px,4vw,48px) 38px}
+    a {color:var(--accent);text-underline-offset:4px} a:focus-visible {outline:2px solid currentColor;outline-offset:4px}
+    header,nav,.heading {display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    header {padding:20px 0;border-bottom:1px solid var(--line)} nav {justify-content:flex-start;font-size:.9rem}
+    .heading {align-items:end;margin:26px 0 20px} .heading p,.caption,dt {color:var(--muted)}
+    h1,h2,h3,p,dd,dl {margin:0} h1,h2,strong.metric {font:400 clamp(2.2rem,6vw,4.2rem)/1.08 Georgia,serif;letter-spacing:-.04em}
+    h2 {font-size:1.65rem;margin:0 0 12px} h3 {font-size:.91rem} small,.caption {font-size:.83rem}
+    main {display:grid;grid-template-columns:1.18fr 1fr;gap:14px} section {min-width:0;border:1px solid var(--line);border-radius:13px;padding:clamp(16px,2.5vw,25px);background:#313244}
+    .capacity {background:#cdd6f4;color:#313244;border-color:#cdd6f4} .capacity .caption {color:#45475a}
+    .metric {display:block;margin:2px 0 8px} .hero-title {font-size:1rem;font-family:inherit;letter-spacing:0}
+    .capacity p {margin-top:10px} table {width:100%;border-collapse:collapse;text-align:left;font-variant-numeric:tabular-nums}
+    th,td {padding:8px 0;border-bottom:1px solid var(--line);font-size:.88rem} th {color:var(--muted);font-weight:500}
+    th:not(:first-child),td:not(:first-child) {text-align:right} tr:last-child td {border-bottom:0}
+    .caption {margin-top:12px} dl div {display:flex;justify-content:space-between;gap:15px;margin:8px 0} dd {text-align:right}
+    .volumes {list-style:none;padding:0;margin:0} .volumes li {display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;margin:10px 0;font-size:.85rem;font-variant-numeric:tabular-nums}
+    .volumes b {font-weight:500;min-width:5em;text-align:right}.track {height:8px;background:#45475a;border-radius:3px}.track i {height:100%;display:block;background:#a6adc8;border-radius:3px}
+    .alerts {grid-column:1/-1;border-color:#6c7086}.alerts ul {margin:0;padding-left:1.3em}.system {grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:22px}
+    @media (max-width:660px){main,.system {grid-template-columns:minmax(0,1fr)}header {align-items:start}nav {gap:12px}.heading {align-items:start}.system {gap:16px}}
+  </style>
+</head><body>
+<header><strong>Mina Cat Cam</strong><nav aria-label="Owner navigation"><a href="/">Camera</a><a href="/sightings/?view=saved">Starred</a><a href="/clips/">Recordings</a></nav></header>
+<div class="heading"><div><h1>Storage</h1><p>Checked $checked</p></div><a href="/storage/">Refresh status</a></div>
+<main>
+  <section class="capacity"><h2 class="hero-title">Free on Mina’s recording disk</h2><strong class="metric">$free</strong><p>Capacity $total</p><p class="caption">Cat Cam media accounts for $media_size. Other files on this disk also use space.</p></section>
+  <section><h2>Recording cleanup</h2><dl><div><dt>Unsaved history</dt><dd>$rule</dd></div><div><dt>Eligible now</dt><dd>$due</dd></div><div><dt>Starred across all dates</dt><dd>$starred</dd></div></dl><p class="caption">Stars preserve the original recording. The recorder checks for expired motion clips every hour.</p></section>
+  $alerts
+  <section><h2>Where the media goes</h2><table><thead><tr><th>Media</th><th>Count</th><th>Size</th></tr></thead><tbody>$media_rows</tbody></table><p class="caption">Raw recordings include starred originals. Reels, short clips and thumbnails are outside the cleanup rule. Short clip sizes include their posters and metadata.</p></section>
+  <section><h2>Recording volume by date</h2><ul class="volumes">$volume</ul><p class="caption">Raw motion recordings still on disk, by Mina’s recording date. The current day is partial.</p></section>
+  <section class="system"><div><h2>Camera &amp; detector</h2><dl><div><dt>Live camera</dt><dd>$camera</dd></div><div><dt>Recordings today</dt><dd>$today</dd></div><div><dt>Checked today</dt><dd>$scanned</dd></div><div><dt>Unreadable today</dt><dd>$unreadable</dd></div></dl></div>
+  <div><h2>Services &amp; power</h2><table><thead><tr><th>Service</th><th>Status</th></tr></thead><tbody>$service_rows</tbody></table><dl><div><dt>External power</dt><dd>$power</dd></div><div><dt>Battery</dt><dd>$battery</dd></div></dl></div></section>
+</main><p class="caption">Figures refresh on request, at most once a minute. Sizes use decimal units.</p></body></html>
