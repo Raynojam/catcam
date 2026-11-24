@@ -24,7 +24,11 @@ case "${1:-}" in
     git cat-file -e "$TARGET^{commit}" 2>/dev/null || git fetch --quiet origin "$TARGET"
     echo "Going back to $(git show "$TARGET:VERSION") ($TARGET)" ;;
   "")
-    if [ "$AVAILABLE" = "$INSTALLED" ]; then echo "Cat Cam $INSTALLED is up to date."; exit 0; fi
+    if [ "$AVAILABLE" = "$INSTALLED" ]; then
+      # Still bring the repo up to date: the lounge installs from these files too.
+      git -c advice.detachedHead=false checkout --quiet origin/main
+      echo "Cat Cam $INSTALLED is up to date (lounge files refreshed)."; exit 0
+    fi
     TARGET="$(git rev-parse origin/main)"
     echo "Installing Cat Cam $AVAILABLE (installed: $INSTALLED)"
     git log --format='  %s' -1 origin/main ;;
