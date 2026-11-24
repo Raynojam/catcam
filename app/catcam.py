@@ -61,7 +61,7 @@ SHORT_LOCK = threading.RLock()
 SHORT_JOBS = {}
 SHORT_WORKER = None
 
-APP_VERSION = "2026.11.23.3"
+APP_VERSION = "2026.11.23.4"
 
 # Cat Cam Plus: a stronger detector when present, and the diary written by insights.py.
 STRONG_MODEL = HIGHLIGHT_DATA / "yolox_s.onnx"

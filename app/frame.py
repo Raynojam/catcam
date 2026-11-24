@@ -206,7 +206,7 @@ def filter_graph(config, preview):
 
 def command(node, config, preview):
     graph, has_snap = filter_graph(config, preview)
-    args = ["ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error",
+    args = ["ffmpeg", "-nostdin", "-y", "-hide_banner", "-loglevel", "error",  # -y: the preview file is rewritten
             "-f", "v4l2", "-input_format", config.get("input_format", "mjpeg"), "-video_size", config["capture"],
             "-framerate", f"{config.get('capture_fps', config['fps']):g}", "-i", node, "-filter_complex", graph,
             "-map", "[out]", "-f", "v4l2", str(LOOPBACK)]

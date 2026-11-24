@@ -86,3 +86,7 @@ def test_the_akaso_keeps_1080p_mjpeg_at_15():
     config = frame.validate(dict(frame.DEFAULTS))
     assert frame.choose_mode(frame.parse_modes(akaso), config) == ("mjpeg", "1920x1080", 15.0)
     assert frame.choose_mode({}, config) is None
+
+
+def test_a_leftover_preview_file_cannot_stop_the_camera():
+    assert "-y" in frame.command("/dev/video2", frame.validate(dict(frame.DEFAULTS)), True)
