@@ -11,6 +11,71 @@ let pollTimer;
 let requestInFlight;
 let imageUrl;
 let liveMode = typeof ReadableStream === 'function';
+const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+const viewButtons = {auto: byId('viewAuto'), wide: byId('viewWide'), upper: byId('viewUpper'), lower: byId('viewLower')};
+const shotNames = {wide: 'Wide view', upper: 'Upper bed', lower: 'Lower perch'};
+const tour = [{shot: 'wide', seconds: 22}, {shot: 'upper', seconds: 24},
+              {shot: 'wide', seconds: 18}, {shot: 'lower', seconds: 24}];
+let viewMode = 'wide';
+let tourTimer;
+let shotIndex = 0;
+let directorLive = false;
+
+function setShot(shot, animate = true) {
+  byId('stage').dataset.motion = animate && !motionPreference.matches ? 'gentle' : 'still';
+  byId('stage').dataset.shot = shot;
+  byId('shotLabel').textContent = shotNames[shot];
+}
+function scheduleShot() {
+  clearTimeout(tourTimer);
+  if (!directorLive || viewMode !== 'auto' || document.hidden || paused || closing) return;
+  tourTimer = setTimeout(() => {
+    if (!directorLive || viewMode !== 'auto' || document.hidden || paused || closing) return;
+    shotIndex = (shotIndex + 1) % tour.length;
+    setShot(tour[shotIndex].shot);
+    scheduleShot();
+  }, tour[shotIndex].seconds * 1000);
+}
+function directorState(live) {
+  if (live === directorLive) return;
+  directorLive = live;
+  clearTimeout(tourTimer);
+  byId('shotLabel').hidden = !live;
+  for (const button of Object.values(viewButtons)) button.disabled = !live || closing;
+  if (!live) {
+    // Stop a CSS transition as well as the tour timer when the stream is hidden.
+    setShot('wide', false);
+    return;
+  }
+  shotIndex = 0;
+  setShot(viewMode === 'auto' ? 'wide' : viewMode, false);
+  scheduleShot();
+}
+function chooseView(mode, remember = true) {
+  if (!Object.keys(viewButtons).includes(mode) || closing) return;
+  viewMode = mode;
+  clearTimeout(tourTimer);
+  shotIndex = 0;
+  for (const [name, button] of Object.entries(viewButtons)) {
+    button.setAttribute('aria-pressed', String(name === mode));
+  }
+  byId('viewHelp').textContent = mode === 'auto'
+    ? 'A slow tour of the beds. Choose a view to hold it.'
+    : (mode === 'wide' ? 'The whole family view. Select Auto for a slow tour.'
+      : 'Holding this view. Select Auto to continue the tour.');
+  setShot(mode === 'auto' ? 'wide' : mode, directorLive);
+  if (remember) storeValue('localStorage', 'catLoungeView', mode);
+  scheduleShot();
+}
+for (const [mode, button] of Object.entries(viewButtons)) {
+  button.disabled = true;
+  button.addEventListener('click', () => chooseView(mode));
+}
+const savedView = storageValue('localStorage', 'catLoungeView');
+chooseView(motionPreference.matches ? 'wide' : (Object.keys(viewButtons).includes(savedView) ? savedView : 'auto'), false);
+motionPreference.addEventListener('change', event => {
+  if (event.matches) chooseView('wide', false);
+});
 
 function storageValue(type, key) {
   try { return window[type].getItem(key); } catch { return null; }
@@ -28,6 +93,7 @@ stripInvitation();
 window.addEventListener('hashchange', stripInvitation);
 
 function clearImage() {
+  directorState(false);
   picture.hidden = true;
   picture.removeAttribute('src');
   if (imageUrl) URL.revokeObjectURL(imageUrl);
@@ -67,6 +133,7 @@ async function showFrame(blob, current) {
     if (ratio && byId('stage').style.aspectRatio !== ratio) byId('stage').style.aspectRatio = ratio;
     if (prior) URL.revokeObjectURL(prior);
     picture.hidden = false;
+    directorState(true);
     byId('curtain').hidden = true;
     if (byId('status').textContent !== 'Live') byId('status').textContent = 'Live';
     byId('badge').classList.add('live');
@@ -158,8 +225,8 @@ async function stream() {
     if (mayShow(current) && frames === 0) { offline(); nextDelay = 2000; }
   } catch {
     if (mayShow(current)) {
-      if (frames === 0) { offline(); nextDelay = 2000; }
-      else nextDelay = 500;
+      offline();
+      nextDelay = frames === 0 ? 2000 : 500;
     }
   } finally {
     clearTimeout(watchdog);
@@ -253,8 +320,11 @@ byId('focus').addEventListener('click', async () => {
   if (closing) return;
   try {
     if (document.fullscreenElement) await document.exitFullscreen();
-    else await byId('stage').requestFullscreen();
+    else await byId('viewer').requestFullscreen();
   } catch { byId('focus').textContent = 'Full screen unavailable'; }
+});
+document.addEventListener('fullscreenchange', () => {
+  byId('focus').textContent = document.fullscreenElement ? 'Exit full screen' : 'Full screen';
 });
 function suspend() {
   stopPolling();
