@@ -49,9 +49,10 @@ def stream():
     if config.get("enabled"):
         if not frame.loopback_ready():
             raise SystemExit("Waiting for the frame stage's virtual camera (/dev/video10). Retrying.")
+        # The frame stage already controls FPS; a second limiter loses frames.
         width, height = frame.output_size(config)
         os.execvp("ustreamer", ["ustreamer", "--device=/dev/video10", "--format=YUYV",
-                                f"--resolution={width}x{height}", f"--desired-fps={config['fps']}",
+                                f"--resolution={width}x{height}", "--desired-fps=0", "--workers=4",
                                 "--device-timeout=5", "--host=127.0.0.1", "--port=8085"])
     node = find_camera()
     if not node:
